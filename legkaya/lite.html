@@ -619,7 +619,7 @@ function vdOut(k,ds,dp){const f=VDP.fly,c=VDP.sec&&VDP.sec.querySelector('.vdC')
    снизу, его верх растушёван (как край блока, SEAM); пятна фона обеих частей стоят на месте окна (bgHold). Цветные плитки стены W56 по очереди
    слетают в миниатюры дней 1–18: копия натягивается на четырёхугольник (углы плитки → углы миниатюры, quadM), белый кант 6 → 0, красная рамка гаснет,
    цвет → ч/б (как миниатюры до публикации), кадр плитки сменяется кадром дня на k .42–.57. Плитка в полёте и миниатюра до посадки скрыты */
-const W56=Array.from({length:18},(_,i)=>i);let F56=null;   // 24.11 Владимир: «все плашки должны перелетать в календарь» — все 18 плиток → дни 1–18 (было 6: 0,2,4,7,9,11)
+const W56=Array.from({length:18},(_,i)=>i),FLY56=false;let F56=null;   // 24.11 Владимир: «все плашки должны перелетать в календарь» — все 18 плиток → дни 1–18 (было 6: 0,2,4,7,9,11)
 function fly56(k){const on=k>=0&&k<1,dH=PT.H.f.contentDocument,dT=PT.T.f.contentDocument;
  const yH=on?(-k*1080).toFixed(1):0,tT=on?`translateY(${((1-k)*1080).toFixed(1)}px)`:'',mf=on?(x=>x*x*(3-2*x))(cl((k-.5)/.5)):1,mk=on?`linear-gradient(to bottom,transparent 0,rgba(0,0,0,${(.164+.836*mf).toFixed(3)}) 36px,#000 220px)`:'';   // самый край фрейма всегда мягкий (36px, выше плашки ШАГ №6 на 40px) — иначе к концу въезда жёсткий шов фонов   // растушёвка верха хвоста снимается ко второй половине въезда — заголовок ШАГ №6 к концу непрозрачный, без вспышки
  // фрейм головы стоит на месте (его фон — во весь экран, без шва), уезжает только контент стены внутри него; хвост въезжает снизу с растушёванным верхом
@@ -636,8 +636,17 @@ function fly56(k){const on=k>=0&&k<1,dH=PT.H.f.contentDocument,dT=PT.T.f.content
    if(R_.classList.contains('m56')!==on)R_.classList.toggle('m56',on);R_.style.setProperty('--a56',g.toFixed(3))}
   const bg=dT&&dT.getElementById('bg');if(bg){let m='';if(on){const y0=-bg.getBoundingClientRect().top;m=`linear-gradient(to bottom,rgba(0,0,0,${g.toFixed(3)}) ${y0.toFixed(1)}px,#000 ${(y0+200).toFixed(1)}px)`}if(bg.style.maskImage!==m)bg.style.maskImage=bg.style.webkitMaskImage=m}}
  /* слабая машина (lite.js): плитки не летят — стена уезжает вверх, календарь въезжает снизу; если режим включился по ходу — убрать копии и вернуть плитки */
- if(window.__lite){if(F56){const T=dH?[...dH.querySelectorAll('.tile')]:[],C=dT?[...dT.querySelectorAll('#cells .cell')]:[];
-   W56.forEach((ti,j)=>{F56[j].remove();[T[ti],C[j+1]&&C[j+1].querySelector('.th')].forEach(e=>{if(e)e.style.visibility=''})});F56=null}return}
+ /* 26.11 Владимир (лёгкая версия): перелёт убран целиком (FLY56=false) — плитки остаются на стене ШАГ №5 и уезжают вместе с ней, а в ШАГ №6
+    миниатюры дней 1–18 по очереди проявляются в пустых ячейках (только opacity, без копий и canvas). Откат — src/qa/bak-fly56-2026-11-26/ */
+ if(!FLY56||window.__lite){if(F56){const T=dH?[...dH.querySelectorAll('.tile')]:[],C=dT?[...dT.querySelectorAll('#cells .cell')]:[];
+   W56.forEach((ti,j)=>{F56[j].remove();[T[ti],C[j+1]&&C[j+1].querySelector('.th')].forEach(e=>{if(e)e.style.visibility=''})});F56=null}
+  // прозрачность — через правило html.m56 … var(--o56) !important, а не th.style.opacity: календарь хвоста сам пишет opacity миниатюр (S кэширует
+  // значения), и стёртое нами значение он не перезаписывает — дни 1–18 оставались пустыми после перехода. Вне m56 правило не действует
+  if(dT&&dT.head&&!dT.getElementById('s56c')){const st=dT.createElement('style');st.id='s56c';st.textContent='html.m56 #cells .cell .th.f56{opacity:var(--o56,1)!important}';dT.head.appendChild(st)}
+  {const C=dT?[...dT.querySelectorAll('#cells .cell')]:[];W56.forEach((ti,j)=>{const th=C[j+1]&&C[j+1].querySelector('.th');if(!th)return;
+   if(!th.classList.contains('f56'))th.classList.add('f56');
+   const o=on?(x=>x*x*(3-2*x))(cl((k-.45-j*.025)/.12)).toFixed(3):'1';if(th.style.getPropertyValue('--o56')!==o)th.style.setProperty('--o56',o)})}
+  return}
  if(!F56){F56=W56.map(()=>{const d=document.createElement('div');d.style.cssText='position:fixed;left:0;top:0;width:150px;height:266px;z-index:6;display:none;overflow:hidden;background:#fff;transform-origin:0 0;pointer-events:none';
   d.innerHTML='<canvas width="300" height="532"></canvas><canvas width="300" height="532"></canvas><i></i>';
   [0,1].forEach(j=>d.children[j].style.cssText='position:absolute;object-fit:cover');d.children[1].style.opacity=0;
