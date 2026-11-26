@@ -333,7 +333,7 @@ const CM_ON=false;   // 21.11 Ф42: блок «Сколько приносят �
 // 26.11 Владимир: «специальную версию… всю анимацию останавливаем, экраны в end-состоянии; из анимации остаются только ролики в плашках».
 // Статика (ST): ?static=1 или index-static.html (qa/static/mk_index_static.py ставит ST=true). Каждый экран стоит на своём конечном кадре;
 // блоки-страницы и сдвиг стена → календарь едут прокруткой, как обычная страница; ШАГ №3 → №4 и календарь → график — смена кадра без перелёта;
-// перелёты карточек (m34, vdFly/vdOut, дни m56), заполнение брифа, линии подчёркивания, самолистание ленты и автоигра вступления — сразу в конце.
+// перелёты карточек (m34, vdFly/vdOut, дни m56), заполнение брифа, самолистание ленты и автоигра вступления — сразу в конце.
 // Ролики 'v' (part.js) играют, как раньше; ролики 's' (перемотка прокруткой) стоят. Без флага всё как было. Откат — src/qa/bak-static-2026-11-26/
 const ST=true;
 const TC=48.45;   // календарь в конце: τ хвоста ≈5,45 — все дни опубликованы, морф в график ещё не начат (τ 5,47 = 48.471)
@@ -428,10 +428,25 @@ function feed(t,dt){
  phJ=PN-1;return a+(b-a)*(t-T_INTRO)/FEEDW}
 // ---------- части
 const PT={H:{f:$('fH'),busy:false,shown:'',on:true},T:{f:$('fT'),busy:false,shown:'',on:false}};
+/* 26.11 статика, слово Владимира: «анимацию оставим только на подчёркивании заголовков; как в мобильной версии».
+   Как на мобильной главной: линия под заголовком экрана открывается прокруткой (первые ULX vh стоянки экрана), назад — сворачивается;
+   новый экран, открытый из-под блока или въехавший снизу, приходит без линии; заголовок первого экрана рисуется сам при открытии (0,35 с + 0,9 с). */
+let UL0=1e12;const ULX=40,eUL=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function ulWant(u){
+ let a=0,i=0;for(;i<SEG.length-1&&u>a+SEG[i][0];i++)a+=SEG[i][0];
+ const s=SEG[i],x=u-a;let v;
+ if(s[5]==='m56')return {H:1,T:0};                                     // стена (с линией) уезжает, календарь въезжает без линии
+ if(s[5]==='page')v=(x/s[0]<.5||s[2]===s[3])?1:0;                       // под блоком: прежний экран с линией; открывается новый — без линии
+ else v=eUL(cl(x/ULX));                                                 // стоянка экрана: линию рисует прокрутка
+ if(s[1]==='H'&&(x/s[0]<.5?s[2]:s[3])===SEG[0][2])v=Math.min(v,eUL(cl((performance.now()-UL0-350)/900)));   // первый экран — сам при открытии
+ return s[1]==='H'?{H:v,T:1}:{H:1,T:v}}
+function ulSet(p,v){if(v==null)v=p.ulw;else p.ulw=v;if(v==null||p.ulc===v)return;p.ulc=v;const d=p.f.contentDocument;if(!d)return;
+ const R=p.ulr||(p.ulr=[d,...[...d.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.shadowRoot)]);   // заголовок вступления — в shadow root
+ R.forEach(r=>r.querySelectorAll('.acc path').forEach(q=>{const L=parseFloat(q.style.strokeDasharray||getComputedStyle(q).strokeDasharray)||102;q.style.strokeDashoffset=(L*(1-v)).toFixed(2)}))}
 function drive(p,t,key,pre){const w=p.f.contentWindow;
  if(t==null){if(p.on){p.on=false;w.__off()}return}
  p.on=true;
- if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false},()=>{p.busy=false})}
+ if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;if(ST){p.ulc=null;p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
  w.__sync()}
 let K=1,CY=540,VB=[0,1080];
 /* сцена — как на главной: на всю ширину под шапкой (window.__COVER), на вертикальном экране — вписана */
@@ -738,7 +753,7 @@ function wsPlace(){const U=scrollU(),pin=$('pin');let x=0,P=null;
     рисуется на входе блока, x 20→65 (заголовок от низа к середине окна); назад — стирается; на выходе нарисована целиком
     16.11 (Владимир: «линия запечатана, ничего не двигается — сделай как на следующем экране»): рисуется на стоянке блока, x 100→140
     (как ШАГ №3: ≈40 vh), блок стоит; ещё 10 vh стоит с целой линией, потом уезжает */
- if((P===BFP||P===WSP||P===VDP||P===CMP||P===PRP)&&P.ul){const k=ST?1:cl((x-100)/40),u=k<.5?2*k*k:1-2*(1-k)*(1-k),o=(102*(1-u)).toFixed(2);if(P._o!==o){P._o=o;P.ul.style.strokeDashoffset=o}}
+ if((P===BFP||P===WSP||P===VDP||P===CMP||P===PRP)&&P.ul){const k=cl((x-100)/40),u=k<.5?2*k*k:1-2*(1-k)*(1-k),o=(102*(1-u)).toFixed(2);if(P._o!==o){P._o=o;P.ul.style.strokeDashoffset=o}}
  if(P===VDP){if(xe!==100){const v=sec.querySelector('#vdV');if(v&&!v.paused)v.pause()}if(ST){vdOut(null);vdFly(null)}else if(xe<=100){vdOut(null);vdFly(xe/100,ds,dp)}else{vdFly(null);vdOut((xe-100)/100,ds,dp)}}   // вход: карточка ШАГ №4 → плеер; выход (тот же путь назад): плеер → карточка, которую сцена несёт в стену ШАГ №5
  const doc=P.part==='H'?dH:dT;bgHold(doc,dp);bgCopy(sec,doc,ds)}
 // ---------- кадр
@@ -758,6 +773,7 @@ function frame(now){
  const mU=+ulAt(cur).toFixed(4),k3=+k34At(cur).toFixed(4);
  drive(PT.H,s.h,s.h+'|'+ph+'|'+pj+'|'+VB+'|'+mU+'|'+k3,w=>{w.__phT=ph;w.__phJ=pj;w.__vb=VB;w.__mUL=mU;w.__k34=k3});   // VB — и голове: сетка ниш поднимается над низом окна (15.11)
  drive(PT.T,s.t,s.t+'|'+VB,w=>{w.__vb=VB});
+ if(ST){const w=ulWant(cur);ulSet(PT.H,+w.H.toFixed(4));ulSet(PT.T,+w.T.toFixed(4))}
  fly56(k5);
  window.__st=s;
  /* кнопка «Задайте нам вопрос» проявляется вместе с логотипом: как только уезжающий блок тарифов открывает её место
@@ -785,7 +801,7 @@ PT.H.f.srcdoc=PARTS.head;PT.T.f.srcdoc=PARTS.tail;
  if(h&&t&&h.__ready&&t.__ready){
   wsBuild().then(()=>{bfBuild();vdBuild();if(CM_ON)cmBuild();prBuild();
    h.seek(T_INTRO-.001);t.seek(F(46));   // прогрев: хвост скрыт, но его первые видео уже создаются и грузятся
-   scrollTo(0,0);window.__site=true;requestAnimationFrame(frame)})}else setTimeout(wait,30)})();
+   scrollTo(0,0);window.__site=true;UL0=performance.now();requestAnimationFrame(frame)})}else setTimeout(wait,30)})();
 // ---------- (копия из site-main) попап «Задайте нам вопрос»: имя, телефон, комментарий. Отправки пока нет — показываем «спасибо»
 (function ask(){const M=$('ask'),F=$('askF'),OK=M.querySelector('.ok'),I=F.elements;let back=null;
  const open=e=>{e&&e.preventDefault();back=document.activeElement;F.hidden=false;OK.hidden=true;F.reset();
