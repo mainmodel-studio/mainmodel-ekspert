@@ -753,13 +753,19 @@ function wsPlace(){const U=scrollU(),pin=$('pin');let x=0,P=null;
  {const v=VDP.sec&&VDP.sec.querySelector('#vdV');if(v&&!v.paused&&P!==VDP)v.pause()}
  const dH=PT.H.f.contentDocument,dT=PT.T.f.contentDocument;
  if(P!==VDP){vdFly(null);vdOut(null)}
- if(!P){if(pin.style.top)pin.style.top='';bgHold(dH,0);bgHold(dT,0);return}
+ if(!P){if(pin.style.top)pin.style.top='';if(pin.style.overflow)pin.style.overflow='';bgHold(dH,0);bgHold(dT,0);return}
  const sec=P.sec;sec.style.display='block';
  const H=innerHeight,hs=P.hs||H,O=Math.round(CY-540*K+SEAM),hd=P.hold||0,xe=x<100?x:x<100+hd?100:x-hd;let ds,dp;
  // стоянка (hd vh): блок доехал (xe=100) и стоит — двигается только подчёркивание; вход и выход ниже считаются по xe
  // вход: блок выезжает снизу, его растворённый верх лежит на низу сцены; выход: блок уходит целиком (с низом), сцена следом под растворённым низом
  // после тарифов сцена с логотипом идёт ближе на 383 px сцены: логотип ≈140 px под сноской, ниже растушёванного низа блока (16.11; было 220, site-full 14.11)
- if(xe<100){ds=Math.round((100-xe)*H/100);dp=Math.min(0,ds-H+SEAM)}
+ if(xe<100){ds=Math.round((100-xe)*H/100);dp=Math.min(0,ds-H+SEAM);
+  // 27.11 Владимир: «страница резко обрывается, должно быть немножко свободного пространства» — статика, въезд «Готового результата» над ШАГ №4:
+  // низ панели монтажа (960 сцены) + 48 px поля держится над чётким верхом блока (ds+45); на низких окнах (1900×940) панель ниже окна —
+  // сцена догоняет плавно, пока верх блока ещё за краем окна (ds H→H−45), без скачка
+  if(ST&&P===VDP){const cb=CY+(1008-540)*K,e=Math.max(0,cb-H-45);dp=Math.min(0,Math.round(ds+45-cb+Math.max(0,e*(ds-H+45)/45)))}}
+ // окно сцены (#pin, 100vh, overflow hidden) обрезает то, что ниже края окна: на въезде над ШАГ №4 открываем низ сцены, иначе срез просто едет вверх вместе с окном (глаз Opus)
+ if(ST){const ov=P===VDP&&xe<100?'visible':'';if(pin.style.overflow!==ov)pin.style.overflow=ov}
  else{const ex=P.len-100-hd;ds=ex>0?-Math.round((xe-100)*hs/ex):0;   // у сравнения ухода нет (ex=0, его толкают тарифы): без защиты 0/0 = NaN и блок застывал на кадре въезда
   dp=Math.max(0,ds+hs-(P===PRP?Math.max(O,Math.round(383*K)):P===WSP||ST?O-SEAM:O))}   // 20.11 Владимир: «верх заголовка ШАГ №3 серый… должен быть чёрным сразу» — после Вордстата сцена идёт вплотную под его низом (низ без растушёвки, CSS), плашка и заголовок не под полупрозрачной полосой
  sec.style.transform=`translateY(${ds}px)`;
