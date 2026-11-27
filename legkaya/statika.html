@@ -455,7 +455,7 @@ const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#hero
  +'#mT{top:452px!important;font-size:26px!important}#sMP{top:496px!important;width:220px!important;height:232px!important}'
  +'#mI{left:280px!important;top:510px!important;width:740px!important}#mI b{font-size:30px!important}#mI .r{font-size:19px!important;margin-bottom:14px!important}'
  +'#mI .e{font-size:18px!important;margin-bottom:18px!important}#mI .q{font-size:21px!important}#foot{top:746px!important;height:90px!important}'
- +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}#stAr{position:absolute;inset:0;pointer-events:none;z-index:60;display:none}#stAr i{position:absolute;top:532px;width:56px;height:56px;margin-left:-28px;border-radius:50%;background:#C8102E;box-shadow:0 8px 22px rgba(200,16,46,.28),0 0 0 5px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}#stAr svg{width:28px;height:28px}';
+ +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}#tLogo,#tBtn,#tSvc,#sMP{outline:4px solid #C8102E!important;outline-offset:5px}#hero::before{content:"";position:absolute;inset:6px;border:4px solid #C8102E;border-radius:12px;background:none;z-index:3;pointer-events:none}#tLogo{border-radius:8px}#stAr{position:absolute;inset:0;pointer-events:none;z-index:60;display:none}#stAr i{position:absolute;top:532px;width:56px;height:56px;margin-left:-28px;border-radius:50%;background:#C8102E;box-shadow:0 8px 22px rgba(200,16,46,.28),0 0 0 5px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}#stAr svg{width:28px;height:28px}';
 /* 26.11 Владимир (статика): «все экраны — разный тон фона, оттенки серого, чтобы было видно, что начинается следующий экран».
    Фон сцены — ровный тон экрана (--tn) без пятен #bg; тон берётся по кадру, на котором стоит часть (меняется вместе с кадром, после seek).
    Тона блоков — CSS html.st в index.tpl.html. Светлые и тёмные чередуются: соседние экраны отличаются на 13–26 уровней. */
@@ -465,6 +465,7 @@ function stTone(p,t){const T=p===PT.H?TN_H:TN_T;let b=T[0];for(const x of T){con
  const R=p.f.contentDocument&&p.f.contentDocument.documentElement;if(R&&R.style.getPropertyValue('--tn')!==b[1])R.style.setProperty('--tn',b[1])}
 const ST_BG='#bg{display:none!important}#stage{background:var(--tn,#ECEDEF)!important}html:root.m56 #stage{background:var(--tn,#ECEDEF)!important}';
 function stDoc(p){const d=p.f.contentDocument;if(!d||!d.head||d.getElementById('stS'))return;const e=d.createElement('style');e.id='stS';e.textContent=ST_BG+(p===PT.H?ST_SITE:'');d.head.appendChild(e);if(p===PT.H){p.f.contentWindow.__mt0=true;stS3(d)}}
+// 27.11 Владимир: на макете сайта «ввести [обвести] красным, что мы взяли с сайта: фото аватара, логотип и так далее» — ST_SITE: outline у #tLogo, #tBtn (фирменный стиль), #hero (интерьер), #tSvc (услуга), #sMP (эксперт).
 // 27.11 Владимир (статика, ШАГ №3): «переписываем заголовок: Собираем дополнительно материал с вашего сайта; стрелки нужны между тремя блоками слева направо».
 // Разметку заголовка не трогаем (подчёркивание .acc работает как было) — меняем только текст; стрелки — красные кружки по центру зазоров 40 px
 // между окном сайта (56–904), «Берём с сайта» (944–1424) и фото (1464–1864); видны только на кадре ШАГ №3 (30.55).
