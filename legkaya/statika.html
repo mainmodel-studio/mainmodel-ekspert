@@ -455,7 +455,7 @@ const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#hero
  +'#mT{top:452px!important;font-size:26px!important}#sMP{top:496px!important;width:220px!important;height:232px!important}'
  +'#mI{left:280px!important;top:510px!important;width:740px!important}#mI b{font-size:30px!important}#mI .r{font-size:19px!important;margin-bottom:14px!important}'
  +'#mI .e{font-size:18px!important;margin-bottom:18px!important}#mI .q{font-size:21px!important}#foot{top:746px!important;height:90px!important}'
- +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}';
+ +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}#stAr{position:absolute;inset:0;pointer-events:none;z-index:60;display:none}#stAr i{position:absolute;top:532px;width:56px;height:56px;margin-left:-28px;border-radius:50%;background:#C8102E;box-shadow:0 8px 22px rgba(200,16,46,.28),0 0 0 5px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}#stAr svg{width:28px;height:28px}';
 /* 26.11 Владимир (статика): «все экраны — разный тон фона, оттенки серого, чтобы было видно, что начинается следующий экран».
    Фон сцены — ровный тон экрана (--tn) без пятен #bg; тон берётся по кадру, на котором стоит часть (меняется вместе с кадром, после seek).
    Тона блоков — CSS html.st в index.tpl.html. Светлые и тёмные чередуются: соседние экраны отличаются на 13–26 уровней. */
@@ -464,11 +464,20 @@ const TN_H=[[3.30,'#ECEDEF'],[30.55,'#E0E2E6'],[31.45,'#F2F3F5'],[41.70,'#EEEFF1
 function stTone(p,t){const T=p===PT.H?TN_H:TN_T;let b=T[0];for(const x of T){const v=p===PT.H?x[0]:F(x[0]);if(Math.abs(v-t)<Math.abs((p===PT.H?b[0]:F(b[0]))-t))b=x}
  const R=p.f.contentDocument&&p.f.contentDocument.documentElement;if(R&&R.style.getPropertyValue('--tn')!==b[1])R.style.setProperty('--tn',b[1])}
 const ST_BG='#bg{display:none!important}#stage{background:var(--tn,#ECEDEF)!important}html:root.m56 #stage{background:var(--tn,#ECEDEF)!important}';
-function stDoc(p){const d=p.f.contentDocument;if(!d||!d.head||d.getElementById('stS'))return;const e=d.createElement('style');e.id='stS';e.textContent=ST_BG+(p===PT.H?ST_SITE:'');d.head.appendChild(e);if(p===PT.H)p.f.contentWindow.__mt0=true}
+function stDoc(p){const d=p.f.contentDocument;if(!d||!d.head||d.getElementById('stS'))return;const e=d.createElement('style');e.id='stS';e.textContent=ST_BG+(p===PT.H?ST_SITE:'');d.head.appendChild(e);if(p===PT.H){p.f.contentWindow.__mt0=true;stS3(d)}}
+// 27.11 Владимир (статика, ШАГ №3): «переписываем заголовок: Собираем дополнительно материал с вашего сайта; стрелки нужны между тремя блоками слева направо».
+// Разметку заголовка не трогаем (подчёркивание .acc работает как было) — меняем только текст; стрелки — красные кружки по центру зазоров 40 px
+// между окном сайта (56–904), «Берём с сайта» (944–1424) и фото (1464–1864); видны только на кадре ШАГ №3 (30.55).
+function stS3(d){const h=d.getElementById('hSb'),em=h&&h.querySelector('.acc em');
+ if(h&&em&&h.firstChild.nodeType===3){h.firstChild.nodeValue='Собираем дополнительно ';em.textContent='материал с вашего сайта'}
+ const st=d.getElementById('stage');if(!st||d.getElementById('stAr'))return;const a=d.createElement('div');a.id='stAr';
+ const ar='<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+ a.innerHTML=`<i style="left:924px">${ar}</i><i style="left:1444px">${ar}</i>`;st.appendChild(a)}
+function stS3on(p,t){if(p!==PT.H)return;const a=p.f.contentDocument&&p.f.contentDocument.getElementById('stAr');if(a)a.style.display=Math.abs(t-30.55)<.01?'block':'none'}
 function drive(p,t,key,pre){const w=p.f.contentWindow;
  if(t==null){if(p.on){p.on=false;w.__off()}return}
  p.on=true;
- if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;if(ST){stDoc(p);stTone(p,t);p.ulc=null;if(p.ulr&&p.ulr.length<2)p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
+ if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;if(ST){stDoc(p);stS3on(p,t);stTone(p,t);p.ulc=null;if(p.ulr&&p.ulr.length<2)p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
  w.__sync()}
 let K=1,CY=540,VB=[0,1080];
 /* сцена — как на главной: на всю ширину под шапкой (window.__COVER), на вертикальном экране — вписана */
