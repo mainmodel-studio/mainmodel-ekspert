@@ -81,7 +81,7 @@ function heading(t, vis, hd = HD, out = OUT1, x0 = Z.head.x0, y0 = Z.head.y0) {
 }
 
 // ── метки рамки по видимой части кадра ──
-function marks(t, vis, lbl = 'КВАРТИРА 9.04 · СХЕМА 01 / 02', out = OUT1 + .1, lowOut = 1e9) {
+function marks(t, vis, lbl = 'КВАРТИРА 9.04 · СХЕМА 01 / 02', out = OUT1 + .1, lowOut = 1e9, lblOut = 1e9) {
   const a = P(t, 0, .5) * (1 - P(t, out, .35)); if (a <= 0) return;
   g.save(); g.globalAlpha *= a; g.strokeStyle = POR; g.lineWidth = 3; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6;
   const m = MOB ? 18 : 36, l = MOB ? 22 : 28;
@@ -93,7 +93,7 @@ function marks(t, vis, lbl = 'КВАРТИРА 9.04 · СХЕМА 01 / 02', out 
   if (MOB) { // телефон: метка под заголовком, на потолке
     const FS = headFS(vis), LH = Math.round(FS * 1.3);
     g.font = MONO(14); const w = g.measureText(lbl).width + 22, x = vis.x0 + 24, y = H * Z.head.y0 + Math.max(0, vis.y0) + 2 * (LH + 6) + 10;
-    plate(x, y, w, 28, a, 'rgba(34,37,34,.78)'); txt(lbl, x + 11, y + 19, MONO(14), POR, a);
+    const la = a * (1 - P(t, lblOut, .3)); if (la > 0) { plate(x, y, w, 28, la, 'rgba(34,37,34,.78)'); txt(lbl, x + 11, y + 19, MONO(14), POR, la); } // метка уступает финальной плашке
     return;
   }
   g.font = MONO(18); const w = g.measureText(lbl).width + 28, x = vis.x1 - 70 - w, y = vis.y0 + 52;
@@ -350,17 +350,22 @@ export function drawAtom2(ctx, t, vis) {
 // телефон (вырезка x 648–1288): девушка x .397–.597; низ занят ногами → финальная плашка сверху, y .21–.39
 export const T3_END = 6;
 const mc = document.createElement('canvas').getContext('2d'), F3_TITLE = 'Двор без машин · встреча у арки';
-export function finaleRect3(vis) {
-  if (MOB) { const x = vis.x0 + 16, w = vis.x1 - vis.x0 - 32, y = Math.max(H * .205, vis.y0 + 200), h = 186; return { x, y, w, h }; }
+export function finaleRect3(vis) {   // фаза 28: две кнопки — «записаться» и «продолжить осмотр»
+  if (MOB) { const x = vis.x0 + 16, w = vis.x1 - vis.x0 - 32, y = Math.max(H * .205, vis.y0 + 200) - 76, h = 252; return { x, y, w, h }; }   // выше на 76: низ плашки над макушкой героини (с двумя кнопками закрывала лоб)
   // ширина по тексту (не больше W·0,44): правый край с тенью не ложится на руку героини на последнем кадре разговора
   mc.font = SERIF(38); const need = Math.max(502, mc.measureText(F3_TITLE).width + 72);
-  const x = Math.max(vis.x0 + 40, W * .03), w = Math.min(W * .44 - x, need), h = 178, y = Math.min(H * .80, Math.min(H, vis.y1) - 30 - h); return { x, y, w, h };
+  const x = Math.max(vis.x0 + 40, W * .03), w = Math.min(W * .44 - x, need), h = 248, y = Math.min(H * .80, Math.min(H, vis.y1) - 30 - h); return { x, y, w, h };
 }
 export function ctaRect3(vis) {
   const r = finaleRect3(vis);
-  if (MOB) return { x: r.x + 18, y: r.y + r.h - 18 - 56, w: r.w - 36, h: 56, fs: 19 };
-  return { x: r.x + 36, y: r.y + r.h - 28 - 58, w: Math.min(430, r.w - 72), h: 58, fs: 19 };
+  if (MOB) return { x: r.x + 18, y: r.y + 112, w: r.w - 36, h: 56, fs: 19 };
+  return { x: r.x + 36, y: r.y + 92, w: Math.min(430, r.w - 72), h: 58, fs: 19 };
 }
+export function contRect3(vis) {   // «продолжить осмотр ЖК» — под записью, той же ширины
+  const c = ctaRect3(vis);
+  return { ...c, y: c.y + c.h + (MOB ? 10 : 12) };
+}
+
 // менеджер: точка на плече → линия → плашка слева на уровне груди (компьютер) / чип над головой (телефон)
 function manager(t, vis) {
   if (MOB) return;                              // телефон: чип заменён кнопкой «▶ ПОСЛУШАТЬ МЕНЕДЖЕРА» (DOM)
@@ -415,7 +420,7 @@ function finale3(t, vis) {
 export function drawAtom3(ctx, t, vis, mode = 'idle') {
   g = ctx; t = clamp(t, 0, T3_END);
   if (mode === 'talk') return;
-  marks(t, vis, 'ДВОР · ВСТРЕЧА НА ПРОСМОТРЕ', 1e9, MOB ? 1e9 : 1.8); // нижние метки уступают полосе
+  marks(t, vis, 'ДВОР · ВСТРЕЧА НА ПРОСМОТРЕ', 1e9, MOB ? 1e9 : 1.8, MOB ? 1.7 : 1e9); // нижние метки уступают полосе
   if (mode === 'idle') manager(t, vis);
   finale3(t, vis);
 }
