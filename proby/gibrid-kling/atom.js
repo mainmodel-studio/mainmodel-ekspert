@@ -349,9 +349,12 @@ export function drawAtom2(ctx, t, vis) {
 // газон слева x .03–.44 / y .84–.96 спокоен; полоса во всю ширину внизу закрыла бы ступни.
 // телефон (вырезка x 648–1288): девушка x .397–.597; низ занят ногами → финальная плашка сверху, y .21–.39
 export const T3_END = 6;
+const mc = document.createElement('canvas').getContext('2d'), F3_TITLE = 'Двор без машин · встреча у арки';
 export function finaleRect3(vis) {
   if (MOB) { const x = vis.x0 + 16, w = vis.x1 - vis.x0 - 32, y = Math.max(H * .205, vis.y0 + 200), h = 186; return { x, y, w, h }; }
-  const x = Math.max(vis.x0 + 40, W * .03), w = W * .44 - x, h = 178, y = Math.min(H * .80, Math.min(H, vis.y1) - 30 - h); return { x, y, w, h };
+  // ширина по тексту (не больше W·0,44): правый край с тенью не ложится на руку героини на последнем кадре разговора
+  mc.font = SERIF(38); const need = Math.max(502, mc.measureText(F3_TITLE).width + 72);
+  const x = Math.max(vis.x0 + 40, W * .03), w = Math.min(W * .44 - x, need), h = 178, y = Math.min(H * .80, Math.min(H, vis.y1) - 30 - h); return { x, y, w, h };
 }
 export function ctaRect3(vis) {
   const r = finaleRect3(vis);
@@ -399,11 +402,11 @@ function finale3(t, vis) {
   plate(x, y, w * k, h, 1, 'rgba(34,37,34,.9)');
   g.save(); g.beginPath(); g.rect(x, y, w * k, h); g.clip();
   if (MOB) {
-    txt('двор без машин ·', x + 18, y + 36, SERIF(28), POR);
+    txt('Двор без машин ·', x + 18, y + 36, SERIF(28), POR);
     txt('встреча у арки', x + 18, y + 66, SERIF(28), POR);
     txt('ЖК ЛИНИЯ · ПРОБА, ДАННЫЕ ВЫДУМАНЫ', x + 19, y + 92, MONO(13), '#D6D9D3');
   } else {
-    txt('Двор без машин · встреча у арки', x + 36, y + 50, SERIF(38), POR);
+    txt(F3_TITLE, x + 36, y + 50, SERIF(38), POR);
     txt('ЖК ЛИНИЯ · ПРОБА, ДАННЫЕ ВЫДУМАНЫ', x + 37, y + 80, MONO(15), '#BFC3BD');
   }
   g.restore();
