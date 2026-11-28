@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 10%22%3E%3Crect width=%2210%22 height=%2210%22 fill=%22%23E78636%22/%3E%3C/svg%3E">
+<title>ОПОРА · строительная группа — проба гибрида</title>
+<style>
+  :root { --por:#F0EEE6; --gr:#222522; --gn:#416B53; --or:#E78636;
+    --heavy: 800 1em Futura,"Avenir Next","Arial Black",sans-serif;
+    --mono: "PT Mono",Menlo,Consolas,monospace; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--por); color: var(--gr); }
+  body { font-family: var(--mono); -webkit-font-smoothing: antialiased; }
+  #scroller { height: 720vh; position: relative; }
+  #stage { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
+  #gl, #atom { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #atom { object-fit: contain; background: var(--por); opacity: 0; }
+  #white { position: absolute; inset: 0; background: var(--por); opacity: 0; pointer-events: none; }
+
+  /* верхняя линия бренда */
+  #bar { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 4vw; font-size: 13px; letter-spacing: .14em; z-index: 5; }
+  #bar b { font: var(--heavy); font-size: 22px; letter-spacing: .02em; }
+  #bar b i { font-style: normal; color: var(--or); }
+  #progress { position: absolute; left: 0; top: 0; height: 3px; background: var(--or); width: 0; z-index: 6; }
+
+  /* моушн-заголовки: строки поднимаются из маски */
+  .hd { position: absolute; z-index: 4; pointer-events: none; }
+  .hd .cap { font-size: 13px; letter-spacing: .18em; margin-bottom: 18px; opacity: 0; display: flex; gap: 14px; align-items: center; }
+  .hd .cap::before { content: ""; width: 34px; height: 3px; background: var(--or); display: inline-block; }
+  .hd .ln { overflow: hidden; line-height: .98; padding-bottom: .06em; }
+  .hd .ln span { display: block; font: var(--heavy); font-size: clamp(40px, 5.6vw, 100px); letter-spacing: -.01em; transform: translateY(110%); will-change: transform; }
+  .hd .ln.acc span { color: var(--or); }
+  #h1, #h2 { left: 4vw; top: 13vh; }
+  #h3 { left: 4vw; bottom: 11vh; color: var(--por); }
+  #h3 .ln span { font-size: clamp(38px, 5.2vw, 92px); }
+  /* подложки под текст: светлая слева сверху (снаружи), тёмная слева снизу (в коридоре) */
+  .scrim { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: 0; }
+  #scrimL { background: radial-gradient(120% 90% at 0% 0%, rgba(240,238,230,.96) 0%, rgba(240,238,230,.9) 40%, rgba(240,238,230,0) 72%); }
+  #scrimD { background: radial-gradient(110% 80% at 0% 100%, rgba(22,26,23,.82) 0%, rgba(22,26,23,.55) 34%, rgba(22,26,23,0) 64%); }
+
+  /* счётчик дней, как на референсе */
+  #day { position: absolute; right: 4vw; bottom: 9vh; z-index: 4; text-align: right; font-size: 13px; letter-spacing: .16em; }
+  #day .n { font: var(--heavy); font-size: clamp(40px, 5vw, 84px); letter-spacing: 0; font-variant-numeric: tabular-nums; display: block; line-height: 1; margin-top: 6px; }
+  #day .n i { font-style: normal; opacity: .4; }
+
+  #hint { position: absolute; left: 50%; bottom: 3.2vh; transform: translateX(-50%); font-size: 12px; letter-spacing: .2em; z-index: 4; }
+  #cta { position: absolute; left: 0; top: 0; z-index: 7; font: var(--heavy); font-size: 17px; letter-spacing: .06em;
+    background: var(--or); color: var(--por); border: 0; padding: 20px 30px; cursor: pointer; opacity: 0; transform: translateY(20px);
+    pointer-events: none; transition: background .2s; white-space: nowrap; }
+  html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
+  #cta:hover { background: var(--gr); }
+  #cta.on { pointer-events: auto; }
+  #note { position: absolute; left: 4vw; bottom: 3vh; font-size: 11px; letter-spacing: .12em; opacity: .55; z-index: 4; }
+</style>
+</head>
+<body>
+<div id="scroller">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="white"></div>
+    <div class="scrim" id="scrimL"></div>
+    <div class="scrim" id="scrimD"></div>
+    <canvas id="atom" width="1920" height="1080"></canvas>
+    <div id="progress"></div>
+    <div id="bar"><b>ОПОРА<i>.</i></b><span>СТРОИТЕЛЬНАЯ ГРУППА · С 2011</span></div>
+
+    <div class="hd" id="h1" data-from="-0.12" data-to="0.21">
+      <div class="cap">ОПОРА · СТРОИТЕЛЬНАЯ ГРУППА · С 2011</div>
+      <div class="ln"><span>СТРОИМ ПО</span></div>
+      <div class="ln acc"><span>ГРАФИКУ,</span></div>
+      <div class="ln"><span>А НЕ ПО ОБЕЩАНИЯМ.</span></div>
+    </div>
+    <div class="hd" id="h2" data-from="0.215" data-to="0.325">
+      <div class="cap">ЭТАП 01 · ОБЪЕКТ ОТКРЫТ</div>
+      <div class="ln"><span>ЗАЙДИТЕ</span></div>
+      <div class="ln acc"><span>НА ОБЪЕКТ.</span></div>
+    </div>
+    <div class="hd" id="h3" data-from="0.37" data-to="0.50">
+      <div class="cap">ЭТАП 02 · ВНУТРИ ГРАФИКА</div>
+      <div class="ln"><span>КАЖДЫЙ ДЕНЬ</span></div>
+      <div class="ln acc"><span>ПОД КОНТРОЛЕМ.</span></div>
+    </div>
+
+    <div id="day">ДЕНЬ СТРОЙКИ<span class="n">001<i>/426</i></span></div>
+    <div id="hint">ЛИСТАЙТЕ ↓</div>
+    <div id="note">ПРОБА · КОМПАНИЯ И ЦИФРЫ ВЫДУМАНЫ</div>
+    <button id="cta" type="button">РАССЧИТАТЬ СРОК ОБЪЕКТА →</button>
+  </div>
+</div>
+
+<script type="module">
+import { createScene } from './scene.js?v=5';
+import { drawAtom, T_END } from './atom.js?v=5';
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const sm = p => { p = clamp(p); return p * p * (3 - 2 * p); };
+const eo = p => { p = clamp(p); return 1 - Math.pow(1 - p, 3); };
+const $ = s => document.querySelector(s);
+
+const scene = createScene($('#gl'));
+const actx = $('#atom').getContext('2d');
+const white = $('#white'), atomEl = $('#atom'), dayEl = $('#day'), dayN = $('#day .n'), hint = $('#hint'),
+      cta = $('#cta'), prog = $('#progress'), bar = $('#bar'), note = $('#note'), scrimL = $('#scrimL'), scrimD = $('#scrimD');
+const heads = [...document.querySelectorAll('.hd')].map(el => ({
+  el, from: +el.dataset.from, to: +el.dataset.to, cap: el.querySelector('.cap'), spans: [...el.querySelectorAll('.ln span')] }));
+
+function placeCta() { // кнопка стоит в правой части финальной графитовой полосы атома (координаты холста 1920×1080)
+  const k = Math.min(innerWidth / 1920, innerHeight / 1080), ox = (innerWidth - 1920 * k) / 2, oy = (innerHeight - 1080 * k) / 2;
+  Object.assign(cta.style, { left: ox + 1310 * k + 'px', top: oy + 812 * k + 'px', width: 480 * k + 'px', height: 86 * k + 'px',
+    fontSize: Math.max(10, 19 * k) + 'px', padding: '0', letterSpacing: '.03em' });
+}
+function resize() { scene.resize(innerWidth, innerHeight); placeCta(); render(cur, true); }
+addEventListener('resize', resize);
+
+const ATOM_A = .61, ATOM_B = .97; // отрезок прокрутки, на котором живёт атом
+function render(p, force) {
+  // 3D до тех пор, пока атом не закрыл экран полностью
+  const atomA = sm((p - .585) / .035);
+  if (atomA < 1 || force) scene.update(Math.min(p, .6));
+  white.style.opacity = sm((p - .50) / .075); // белый свет в конце контейнера
+  atomEl.style.opacity = atomA;
+  if (atomA > 0) drawAtom(actx, T_END * clamp((p - ATOM_A) / (ATOM_B - ATOM_A)));
+
+  const vis = h => sm((p - h.from) / .03) * (1 - sm((p - h.to + .06) / .03)); // подпись уходит вместе со строками
+  scrimL.style.opacity = Math.max(vis(heads[0]), vis(heads[1]));
+  scrimD.style.opacity = vis(heads[2]);
+  for (const h of heads) {
+    const span = h.to - h.from;
+    h.cap.style.opacity = vis(h);
+    h.spans.forEach((s, j) => {
+      const a = eo((p - h.from - j * .012) / (span * .35));
+      const e = eo((p - h.to + .045 - j * .008) / .045);
+      s.style.transform = `translateY(${((1 - a) * 110 - e * 150).toFixed(2)}%)`;
+      s.style.opacity = (1 - sm(e * 1.6)).toFixed(3); // уходя, строка ещё и гаснет — без огрызков у края маски
+    });
+  }
+  const day = Math.round(1 + 411 * clamp(p / .6));
+  dayN.firstChild.nodeValue = String(day).padStart(3, '0');
+  dayEl.style.opacity = 1 - sm((p - .48) / .05);
+  const light = p > .30 && p < .52; // тёмные двери и коридор → светлый интерфейс
+  dayEl.style.color = bar.style.color = note.style.color = light ? '#F0EEE6' : '#222522';
+  bar.style.background = light ? 'none' : 'linear-gradient(rgba(240,238,230,.92), rgba(240,238,230,.6) 70%, rgba(240,238,230,0))';
+  hint.style.opacity = 1 - sm(p / .03);
+  const c = sm((p - .955) / .03);
+  cta.style.opacity = c; cta.style.transform = `translateY(${(1 - c) * 20}px)`; cta.classList.toggle('on', c > .5);
+  prog.style.width = (p * 100).toFixed(2) + '%';
+}
+
+let tgt = 0, cur = 0;
+const readScroll = () => { const m = document.documentElement.scrollHeight - innerHeight; tgt = m > 0 ? clamp(scrollY / m) : 0; };
+addEventListener('scroll', readScroll, { passive: true });
+function loop() {
+  const d = tgt - cur;
+  if (Math.abs(d) > 1e-5) { cur += d * .1; render(cur); }
+  requestAnimationFrame(loop);
+}
+// для проверки кадров: мгновенный прыжок к прогрессу p
+window.__jump = p => { const m = document.documentElement.scrollHeight - innerHeight; scrollTo(0, p * m); tgt = cur = p; render(p, true); };
+cta.addEventListener('click', () => alert('Это проба: форма расчёта появится на настоящем сайте.'));
+
+document.fonts.ready.then(() => { readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true; });
+</script>
+</body>
+</html>
