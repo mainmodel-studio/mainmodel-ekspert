@@ -342,3 +342,33 @@ export function drawAtom2(ctx, t, vis) {
   heading(t, vis, HD2, 1e9, .31, MOB ? Z.head.y0 : .022);
   drum2(t, vis); callouts2(t, vis); finale(t, vis);
 }
+
+// ═════════ живые предметы гостиной: наведение → контур по маске + плашка с ценой ═════════
+// it = { b: bbox кропа в долях кадра, ring: спрайт контура, title, sub, price }; a — проявление 0…1; (px, py) — точка курсора/тапа в координатах кадра
+export function drawHot(ctx, it, a, px, py, vis) {
+  if (!it || a <= .002) return;
+  g = ctx;
+  const FXh = fx => MOB ? fx * 1928 - 648 : fx * W, sx = MOB ? 1928 : W;
+  const x = FXh(it.b.x0), y = it.b.y0 * H, w = (it.b.x1 - it.b.x0) * sx, h = (it.b.y1 - it.b.y0) * H;
+  g.save(); g.globalAlpha = a; if (it.ring.complete) g.drawImage(it.ring, x, y, w, h); g.restore();
+  // плашка: ширина по тексту, плотная (не просвечивает схема); у курсора, но не на списке зон и не на краю кадра
+  const f = MOB ? .82 : 1, pad = 22 * f, ph = Math.round(118 * f), gap = 22 * f;
+  g.font = HEAVY(Math.round(25 * f)); const w1 = g.measureText(it.title).width;
+  g.font = MONO(Math.round(14 * f)); const w2 = g.measureText(it.sub).width;
+  g.font = HEAVY(Math.round(34 * f)); const w3 = g.measureText(it.price).width + 70 * f;
+  const pw = Math.ceil(Math.max(w1, w2, w3) + pad + 18 * f);
+  let bx = px + gap, by = py - gap - ph;
+  if (MOB) { bx = px - pw / 2; by = Math.max(by, H * Z.list.y1 + 16); }          // телефон: под списком зон
+  else if (bx + pw > Math.min(vis.x1 - 14, W * Z.list.x0 - 12)) bx = px - gap - pw; // компьютер: справа список — плашка слева от курсора
+  bx = clamp(bx, vis.x0 + 14, vis.x1 - 14 - pw); by = clamp(by, vis.y0 + 70, vis.y1 - 14 - ph);
+  const lift = (1 - eo(a)) * 14;
+  plate(bx, by + lift, pw, ph, a, 'rgb(240,238,230)');
+  g.save(); g.globalAlpha *= a;
+  g.fillStyle = OR; g.fillRect(bx, by + lift, MOB ? 6 : 8, ph);
+  const tx = bx + pad;
+  txt(it.title, tx, by + lift + 34 * f, HEAVY(Math.round(25 * f)), GR);
+  txt(it.sub, tx, by + lift + 58 * f, MONO(Math.round(14 * f)), GR);
+  txt(it.price, tx, by + lift + 100 * f, HEAVY(Math.round(34 * f)), OR);
+  txt('ПРОБА', bx + pw - 16 * f, by + lift + 98 * f, MONO(Math.round(11 * f)), GR, .55, 'right');
+  g.restore();
+}

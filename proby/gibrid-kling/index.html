@@ -114,7 +114,7 @@
 </div>
 
 <script type="module">
-import { drawAtom, drawAtom2, drawTurn, ctaRect, setMobile, T_END, T2_END, W, H } from './atom.js?v=11';
+import { drawAtom, drawAtom2, drawTurn, drawHot, ctaRect, setMobile, T_END, T2_END, W, H } from "./atom.js?v=13";
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
 const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen72.mp4'; // кухня досчитана до 72 к/с: быстрый поворот при 24 к/с шёл ступеньками // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
@@ -222,6 +222,38 @@ function seeker(v) {
 }
 const s1 = seeker(vid), s2 = seeker(vid2);
 
+
+// ── живые предметы: с кадра гостиной (видео стоит, p1 ≥ V_END) наведение мышью / тап → контур по маске + плашка ──
+const HOT = [{ id: 'sofa', b: { x0: 0.31771, y0: 0.50843, x1: 0.75833, y1: 0.82397 },
+  title: 'ДИВАН С ШЕЗЛОНГОМ', sub: 'ЛЁН · 3 МЕСТА · 290 СМ', price: '189 000 ₽', ringSrc: 'hot/sofa-ring.png', hitSrc: 'hot/sofa-hit.png' }];
+for (const it of HOT) {
+  it.ring = new Image(); it.ring.src = it.ringSrc;
+  const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0); it.hit = { w: im.width, h: im.height, d: x.getImageData(0, 0, im.width, im.height).data }; };
+  im.src = it.hitSrc;
+}
+const hot = { cx: -1, cy: -1, it: null, a: 0, tap: null, px: 0, py: 0 }, stage = $('#stage');
+let hotOn = false; // кадр гостиной стоит — предметы живые
+function hitAt(cx, cy) { // точка экрана → предмет под ней (по пикселям маски, не по прямоугольнику)
+  const x = (cx - ox) / k, y = (cy - oy) / k, nx = MOBILE ? (x + 648) / 1928 : x / W, ny = y / H;
+  for (const it of HOT) {
+    const b = it.b; if (!it.hit || nx < b.x0 || nx >= b.x1 || ny < b.y0 || ny >= b.y1) continue;
+    const ix = Math.floor((nx - b.x0) / (b.x1 - b.x0) * it.hit.w), iy = Math.floor((ny - b.y0) / (b.y1 - b.y0) * it.hit.h);
+    if (it.hit.d[(iy * it.hit.w + ix) * 4] > 127) return { it, x, y };
+  }
+  return null;
+}
+function hotUpdate() { // кто подсвечен: компьютер — под курсором, телефон — по тапу
+  const h = !hotOn ? null : MOBILE ? hot.tap : (hot.cx >= 0 ? hitAt(hot.cx, hot.cy) : null);
+  if (h) { hot.it = h.it; hot.px = h.x; hot.py = h.y; }
+  hot.want = h ? 1 : 0;
+  stage.style.cursor = h && !MOBILE ? 'pointer' : '';
+}
+addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; hot.cx = e.clientX; hot.cy = e.clientY; hotUpdate(); kick(); });
+document.addEventListener('mouseout', e => { if (e.relatedTarget) return; hot.cx = -1; hotUpdate(); kick(); }); // курсор ушёл из окна
+stage.addEventListener('click', e => { if (!MOBILE || !hotOn) return; const h = hitAt(e.clientX, e.clientY);
+  hot.tap = h && !(hot.tap && hot.want) ? h : null; hotUpdate(); kick(); }); // второй тап — закрыть
+
 function placeCta() {
   const r = ctaRect(vis);
   Object.assign(cta.style, { left: ox + r.x * k + 'px', top: oy + r.y * k + 'px', width: r.w * k + 'px', height: r.h * k + 'px', fontSize: Math.max(12, r.fs * k) + 'px' });
@@ -252,6 +284,8 @@ function render(p) {
   const ta = T_END * clamp((p1 - ATOM_A) / (ATOM_B - ATOM_A)), ta2 = T2_END * clamp((q - ATOM2_A) / (ATOM2_B - ATOM2_A));
   ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
   if (p1 > ATOM_A && !inB) drawAtom(ctx, ta, vis);
+  const on = !inB && p1 >= V_END + .005; if (on !== hotOn) { hotOn = on; if (!on) hot.tap = null; hotUpdate(); }
+  if (!inB) drawHot(ctx, hot.it, hot.a, hot.px, hot.py, vis);
   if (showB) drawTurn(ctx, vt2, vis);
   if (q > ATOM2_A) drawAtom2(ctx, ta2, vis);
 
@@ -279,12 +313,15 @@ function render(p) {
   prog.style.width = (p * 100).toFixed(2) + '%';
 }
 
-let tgt = 0, cur = 0;
+let tgt = 0, cur = 0, kicked = false; const kick = () => kicked = true;
 const readScroll = () => { const m = document.documentElement.scrollHeight - innerHeight; tgt = m > 0 ? clamp(scrollY / m) : 0; };
 addEventListener('scroll', readScroll, { passive: true });
 function loop() {
   const d = tgt - cur;
-  if (Math.abs(d) > 1e-5) { cur += d * .1; render(cur); }
+  const ha = (hot.want || 0) - hot.a, hm = Math.abs(ha) > .002;
+  if (hm) hot.a += ha * .2; else hot.a = hot.want || 0;
+  if (Math.abs(d) > 1e-5) { cur += d * .1; render(cur); } else if (hm || kicked) render(cur);
+  kicked = false;
   requestAnimationFrame(loop);
 }
 // для проверки кадров: прыжок к прогрессу p, промис ждёт готовый кадр видео
