@@ -246,7 +246,10 @@ export function drawTurn(ctx, vt, vis) {
   const a = eo((vt - 1.5) / .32) * (1 - eo((vt - 2.75) / .32)); if (a <= 0) return;
   g = ctx;
   const x0 = W * .772, w = vis.x1 - x0, x = x0 + (1 - a) * (w + 40), y = vis.y0, h = vis.y1 - vis.y0;
-  plate(x, y, w + 40, h, 1, 'rgba(240,238,230,.94)');
+  // панель во всю высоту: размытая тень такого размера дорога на Retina каждый кадр — вместо неё градиент слева
+  const sh = g.createLinearGradient(x - 28, 0, x, 0); sh.addColorStop(0, 'rgba(20,22,20,0)'); sh.addColorStop(1, 'rgba(20,22,20,.22)');
+  g.fillStyle = sh; g.fillRect(x - 28, y, 28, h);
+  g.fillStyle = 'rgb(240,238,230)'; g.fillRect(x, y, w + 40, h); // плотная: под панелью плавится штора Kling
   g.fillStyle = OR; g.fillRect(x, y, 10, h);
   const cx = x + 46;
   txt('ПОВОРОТ НАПРАВО', cx, y + h * .30, MONO(17), GR);

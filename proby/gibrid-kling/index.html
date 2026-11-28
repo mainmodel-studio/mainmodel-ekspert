@@ -114,10 +114,10 @@
 </div>
 
 <script type="module">
-import { drawAtom, drawAtom2, drawTurn, ctaRect, setMobile, T_END, T2_END, W, H } from './atom.js?v=10';
+import { drawAtom, drawAtom2, drawTurn, ctaRect, setMobile, T_END, T2_END, W, H } from './atom.js?v=11';
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
-const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen.mp4'; // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
+const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen72.mp4'; // кухня досчитана до 72 к/с: быстрый поворот при 24 к/с шёл ступеньками // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
 // телефон: Safari медленно перематывает видео (лаг на iPhone 15) — вместо видео кадры WebP 640×1072 на холсте
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -187,9 +187,9 @@ async function loadVideo2() { // часть 2 грузится фоном, по�
 }
 
 // ── телефон: кадры-картинки на холсте, между соседними кадрами — смешивание ──
-const NF = 121, FR = 24, frames1 = [], frames2 = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
+const NF = 121, FR = 24, NF2 = 358, FR2 = 72, frames1 = [], frames2 = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
 let lastKey = '';
-function loadSet(dir, arr, onPct) {
+function loadSet(dir, arr, onPct, NF = 121) {
   let got = 0, next = 0;
   const one = i => new Promise(res => { const im = new Image(); arr[i] = im;
     im.onload = im.onerror = () => { got++; onPct(Math.round(got / NF * 100)); res(); };
@@ -201,11 +201,11 @@ async function loadFrames() {
   dur = NF / FR; vid.remove(); vid2.remove(); load.remove(); poster.remove();
 }
 async function loadFrames2() {
-  await loadSet('frames-m2', frames2, n => load2.textContent = 'КУХНЯ ' + n + '%');
-  dur2 = NF / FR; ready2 = true; window.__ready2 = true; lastKey = ''; render(cur);
+  await loadSet('frames-m3', frames2, n => load2.textContent = 'КУХНЯ ' + n + '%', NF2);
+  dur2 = NF2 / FR2; ready2 = true; window.__ready2 = true; lastKey = ''; render(cur);
 }
 function drawSeq(set, id, vt) {
-  const f = clamp(vt * FR, 0, NF - 1), key = id + ':' + f.toFixed(2); if (key === lastKey) return; lastKey = key;
+  const n = id === 1 ? NF : NF2, f = clamp(vt * (id === 1 ? FR : FR2), 0, n - 1), key = id + ':' + f.toFixed(2); if (key === lastKey) return; lastKey = key;
   const i = id === 1 ? Math.floor(f) : Math.round(f), a = f - i;
   sctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
   sctx.globalAlpha = 1; if (set[i]?.complete) sctx.drawImage(set[i], 0, 0, W, H);
