@@ -42,7 +42,7 @@ function txt(s, x, y, font, col, a = 1, al = 'left', base = 'alphabetic') {
 }
 function plate(x, y, w, h, a = 1, fill = PLATE) {
   if (a <= 0) return; g.save(); g.globalAlpha *= a;
-  g.shadowColor = 'rgba(20,22,20,.28)'; g.shadowBlur = 24; g.shadowOffsetY = 8;
+  if (!MOB) { g.shadowColor = 'rgba(20,22,20,.28)'; g.shadowBlur = 24; g.shadowOffsetY = 8; } // телефон: размытая тень в Safari дорогая — без неё
   g.fillStyle = fill; g.fillRect(x, y, w, h); g.restore();
 }
 

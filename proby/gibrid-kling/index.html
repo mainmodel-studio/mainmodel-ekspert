@@ -16,7 +16,7 @@
   html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
   #scroller { height: 660vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; height: 100dvh; width: 100%; overflow: hidden; }
-  #vid, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vid, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   #vid, #poster img { object-fit: cover; }
   #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(70% 70% at 50% 48%, #FFFEFA 0%, #FFF4DF 38%, #F8E1BD 75%, #EFCFA2 100%); }
@@ -54,7 +54,7 @@
   #cta.on { pointer-events: auto; }
   #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; font-size: 12px; letter-spacing: .2em; color: var(--por);
     background: rgba(34,37,34,.8); padding: 14px 22px; transition: opacity .3s; }
-  /* телефон / узкий экран: своё лёгкое вертикальное видео (flight-m.mp4) и раскладка атома */
+  /* телефон / узкий экран: лёгкая вертикальная последовательность кадров (frames-m/, вместо видео — iOS медленно перематывает) и раскладка атома */
   @media (max-aspect-ratio: 4/5), (max-width: 699px) {
     #bar { padding: 16px 5vw 28px; font-size: 10px; letter-spacing: .1em; }
     #bar b { font-size: 19px; }
@@ -73,6 +73,7 @@
 <div id="scroller">
   <div id="stage">
     <video id="vid" muted playsinline preload="auto"></video>
+    <canvas id="seq"></canvas>
     <picture id="poster"><source media="(max-aspect-ratio: 4/5), (max-width: 699px)" srcset="poster-m.jpg"><img src="poster.jpg" alt=""></picture>
     <div id="flash"></div>
     <div class="scrim" id="scrim"></div>
@@ -101,10 +102,11 @@
 </div>
 
 <script type="module">
-import { drawAtom, ctaRect, setMobile, T_END, W, H } from './atom.js?v=7';
+import { drawAtom, ctaRect, setMobile, T_END, W, H } from './atom.js?v=8';
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
-const VIDEO = MOBILE ? 'flight-m.mp4' : 'flight.mp4'; // телефон: вертикальная вырезка 640×1072, 2,1 МБ вместо 8,7
+const VIDEO = 'flight.mp4'; // компьютер: видео 1920, скраб перемоткой
+// телефон: Safari медленно перематывает видео (лаг на iPhone 15) — вместо видео 121 кадр WebP 640×1072 (2,2 МБ) на холсте
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const sm = p => { p = clamp(p); return p * p * (3 - 2 * p); };
@@ -149,6 +151,25 @@ async function loadVideo() {
   dur = vid.duration || dur; load.remove(); poster.remove(); // сразу, без затухания: ни след «ЗАГРУЗКИ», ни постер (кадр фасада) не должны двоиться с текущим кадром
 }
 
+// ── телефон: кадры-картинки на холсте, между соседними кадрами — смешивание ──
+const NF = 121, FR = 24, frames = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
+let lastF = -1;
+async function loadFrames() {
+  let got = 0, next = 0;
+  const one = i => new Promise(res => { const im = new Image(); frames[i] = im;
+    im.onload = im.onerror = () => { got++; load.textContent = 'ЗАГРУЗКА ' + Math.round(got / NF * 100) + '%'; res(); };
+    im.src = 'frames-m/' + String(i).padStart(3, '0') + '.webp'; });
+  await Promise.all(Array.from({ length: 6 }, async () => { while (next < NF) await one(next++); }));
+  dur = NF / FR; vid.remove(); load.remove(); poster.remove();
+}
+function drawSeq(vt) {
+  const f = clamp(vt * FR, 0, NF - 1); if (Math.abs(f - lastF) < .01) return; lastF = f;
+  const i = Math.floor(f), a = f - i;
+  sctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
+  sctx.globalAlpha = 1; if (frames[i]?.complete) sctx.drawImage(frames[i], 0, 0, W, H);
+  if (a > .03 && frames[i + 1]?.complete) { sctx.globalAlpha = a; sctx.drawImage(frames[i + 1], 0, 0, W, H); }
+}
+
 // ── скраб: одна перемотка за раз, последняя цель не теряется ──
 let want = 0, seeking = false;
 function seek(t) { want = t; if (!seeking && vid.readyState >= 1 && Math.abs(vid.currentTime - t) > .02) { seeking = true; vid.currentTime = t; } }
@@ -161,6 +182,7 @@ function placeCta() {
 function resize() {
   dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+  if (MOBILE) { seqCv.width = cv.width; seqCv.height = cv.height; lastF = -1; }
   k = Math.max(innerWidth / W, innerHeight / H); ox = (innerWidth - W * k) / 2; oy = (innerHeight - H * k) / 2;
   vis = { x0: -ox / k, y0: -oy / k, x1: W + ox / k, y1: H + oy / k };
   placeCta(); render(cur, true);
@@ -169,7 +191,7 @@ addEventListener('resize', resize);
 
 function render(p) {
   const vt = videoTime(p);
-  seek(vt - (p >= V_END ? .001 : 0));
+  if (MOBILE) drawSeq(vt); else seek(vt - (p >= V_END ? .001 : 0));
   // вспышка влёта: свет из окна закрывает стык 4,3–4,7 с (импост и картина) — по реальному времени видео
   flash.style.opacity = (clamp((1 - Math.abs(vt - 4.54) / .38) * 1.6) ** .7 * .94).toFixed(3); // плато 4,40–4,68 с
 
@@ -216,7 +238,7 @@ window.__jump = p => new Promise(res => {
 });
 cta.addEventListener('click', () => alert('Это проба: запись на просмотр появится на настоящем сайте.'));
 
-Promise.all([document.fonts.ready, loadVideo()]).then(() => { readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true; });
+Promise.all([document.fonts.ready, MOBILE ? loadFrames() : loadVideo()]).then(() => { readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true; });
 resize();
 </script>
 </body>
