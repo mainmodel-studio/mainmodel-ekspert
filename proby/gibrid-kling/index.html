@@ -16,8 +16,10 @@
   html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
   #scroller { height: 1900vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; height: 100dvh; width: 100%; overflow: hidden; }
-  #vid, #vid2, #vid3, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #vid, #vid2, #vid3, #poster img { object-fit: cover; }
+  #vid, #vid2, #vid3, #talk, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vid, #vid2, #vid3, #talk, #poster img { object-fit: cover; }
+  #talk { visibility: hidden; z-index: 2; }
+  #atom { z-index: 2; }   /* после #talk в DOM: в 'end' плашка финала и метки поверх стоп-кадра менеджера */
   #vid2, #vid3 { visibility: hidden; }
   #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(70% 70% at 50% 48%, #FFFEFA 0%, #FFF4DF 38%, #F8E1BD 75%, #EFCFA2 100%); }
@@ -51,7 +53,13 @@
     text-shadow: 0 1px 8px rgba(0,0,0,.5); }
   #cta { position: absolute; left: 0; top: 0; z-index: 7; font: var(--heavy); letter-spacing: .03em;
     background: var(--or); color: var(--por); border: 0; cursor: pointer; opacity: 0; pointer-events: none; transition: background .2s; white-space: nowrap; }
-  #cta:hover { background: var(--gn); }
+  @media (hover: hover) { #cta:hover { background: var(--gn); } }   /* тач: без залипшего hover */
+  /* кнопка «послушать менеджера»: видео HeyGen со звуком поверх финала двора */
+  #talkBtn { position: absolute; left: 0; top: 0; z-index: 7; font: var(--heavy); letter-spacing: .06em; display: flex; align-items: center; gap: .7em;
+    background: var(--gr); color: var(--por); border: 0; cursor: pointer; opacity: 0; pointer-events: none; transition: background .2s; white-space: nowrap; padding: 0 1em; }
+  #talkBtn::before { content: ""; border-left: .78em solid var(--or); border-top: .45em solid transparent; border-bottom: .45em solid transparent; }
+  @media (hover: hover) { #talkBtn:hover { background: var(--gn); } }
+  #talkBtn.on { pointer-events: auto; }
   #cta.on { pointer-events: auto; }
   #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; font-size: 12px; letter-spacing: .2em; color: var(--por);
     background: rgba(34,37,34,.8); padding: 14px 22px; transition: opacity .3s; }
@@ -78,6 +86,7 @@
     <video id="vid" muted playsinline preload="auto"></video>
     <video id="vid2" muted playsinline preload="auto"></video>
     <video id="vid3" muted playsinline preload="auto"></video>
+    <video id="talk" playsinline preload="none"></video>
     <canvas id="seq"></canvas>
     <picture id="poster"><source media="(max-aspect-ratio: 4/5), (max-width: 699px)" srcset="poster-m.jpg"><img src="poster.jpg" alt=""></picture>
     <div id="flash"></div>
@@ -116,6 +125,7 @@
     <div id="hint">ЛИСТАЙТЕ ↓</div>
     <div id="note">ПРОБА · ЖК И ЦИФРЫ ВЫДУМАНЫ</div>
     <button id="cta" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
+    <button id="talkBtn" type="button">ПОСЛУШАТЬ МЕНЕДЖЕРА</button>
     <div id="load">ЗАГРУЗКА 0%</div>
     <div id="load2">КУХНЯ 0%</div>
     <div id="load3">ДВОР 0%</div>
@@ -123,7 +133,7 @@
 </div>
 
 <script type="module">
-import { drawAtom, drawAtom2, drawAtom3, drawTurn, drawHot, ctaRect3, setMobile, T_END, T2_END, T3_END, W, H } from "./atom.js?v=16";
+import { drawAtom, drawAtom2, drawAtom3, drawTurn, drawHot, ctaRect3, talkRect3, setMobile, T_END, T2_END, T3_END, W, H } from "./atom.js?v=17";
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
 const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen72.mp4', VIDEO3 = 'yard.mp4'; // двор: kling3 (до 3,75 с) + kling4 + kling6, 24 к/с; // кухня досчитана до 72 к/с: быстрый поворот при 24 к/с шёл ступеньками // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
@@ -295,7 +305,22 @@ stage.addEventListener('click', e => { if (!MOBILE || !hotOn) return; const h = 
 function placeCta() {
   const r = ctaRect3(vis);
   Object.assign(cta.style, { left: ox + r.x * k + 'px', top: oy + r.y * k + 'px', width: r.w * k + 'px', height: r.h * k + 'px', fontSize: Math.max(12, r.fs * k) + 'px' });
+  const b = talkRect3(vis);
+  Object.assign(talkBtn.style, { left: ox + b.x * k + 'px', top: oy + b.y * k + 'px', width: b.w * k + 'px', height: Math.max(30, b.h * k) + 'px', fontSize: Math.max(12, b.fs * k) + 'px' });
 }
+
+// ── фаза 26: менеджер говорит (HeyGen + атомы субтитров за героиней, звук). Первый кадр talk = последний кадр двора (замер: сдвиг ~1 px) ──
+// talk: 'idle' (до нажатия) → 'talk' (видео со звуком, холст пуст) → 'end' (после «Запишитесь ниже»: полоса с записью; кадр стоит)
+const talk = $('#talk'), talkBtn = $('#talkBtn'), TALK = MOBILE ? 'talk-m.mp4' : 'talk.mp4', TALK_END = 9.6;
+let talkMode = 'idle', talkHere = false;
+function talkStop() { if (talkMode === 'idle') return; talk.pause(); talkMode = 'idle'; talk.style.visibility = 'hidden'; kick(); }
+talkBtn.addEventListener('click', () => {
+  if (!talk.src) talk.src = TALK;
+  talk.currentTime = 0; talk.muted = false; talkMode = 'talk'; talk.style.visibility = 'visible';
+  talk.play().catch(() => talkStop()); kick();
+});
+talk.addEventListener('timeupdate', () => { if (talkMode === 'talk' && talk.currentTime >= TALK_END) { talkMode = 'end'; kick(); } });
+talk.addEventListener('ended', () => { if (talkMode !== 'idle') { talkMode = 'end'; kick(); } });
 function resize() {
   dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
@@ -330,7 +355,9 @@ function render(p) {
   if (showB && !showC) drawTurn(ctx, vt2, vis);
   if (q > ATOM2_A && !showC) drawAtom2(ctx, ta2, vis);
   const ta3 = T3_END * clamp((r - ATOM3_A) / (ATOM3_B - ATOM3_A));
-  if (showC && r > ATOM3_A) drawAtom3(ctx, ta3, vis);
+  talkHere = showC && r >= V3_END - .002;               // финал у арки стоит — менеджер может говорить
+  if (!talkHere) talkStop();
+  if (showC && r > ATOM3_A) drawAtom3(ctx, ta3, vis, talkMode);
 
   const loc = h => h.seg === 3 ? r : h.seg === 2 ? q : p1;
   const vis2 = h => sm((loc(h) - h.from) / .03) * (1 - sm((loc(h) - h.to + (h.seg === 3 ? .025 : .06)) / .03)); // двор: подложка держится, пока строки не ушли с фасада
@@ -355,8 +382,12 @@ function render(p) {
   const u3 = clamp((r - .37) / (V3_END - .37));
   dist3N.firstChild.nodeValue = String(Math.round(43 * (1 - u3))).padStart(3, '0');
   dist3.style.opacity = showC ? sm((r - .37) / .03) * (1 - sm((r - V3_END + .02) / .03)) : 0;
-  const c = showC ? sm((ta3 - 2.6) / .4) : 0;
+  const c = showC && talkMode !== 'talk' ? sm((ta3 - 2.6) / .4) : 0;
   cta.style.opacity = c; cta.classList.toggle('on', c > .5);
+  // кнопка только до разговора (компьютер — с раскрытием плашки менеджера); после слов уходит: на последнем кадре она легла бы на героиню.
+  // Повтор — прокрутить назад и снова к арке (talkStop сбрасывает в 'idle')
+  const tb = talkHere && talkMode === 'idle' ? sm((ta3 - (MOBILE ? .9 : 1.45)) / .35) : 0;
+  talkBtn.style.opacity = tb; talkBtn.classList.toggle('on', tb > .5);
   prog.style.width = (p * 100).toFixed(2) + '%';
 }
 
@@ -372,6 +403,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 // для проверки кадров: прыжок к прогрессу p, промис ждёт готовый кадр видео
+window.__talk = () => talkBtn.click(); window.__talkMode = () => talkMode;
 window.__jump = p => new Promise(res => {
   const m = document.documentElement.scrollHeight - innerHeight; scrollTo(0, p * m); tgt = cur = p; render(p);
   const done = () => (s1.busy || s2.busy || s3.busy ? setTimeout(done, 30) : requestAnimationFrame(() => requestAnimationFrame(() => res(true))));
@@ -381,7 +413,7 @@ cta.addEventListener('click', () => alert('Это проба: запись на 
 
 Promise.all([document.fonts.ready, MOBILE ? loadFrames() : loadVideo()]).then(() => {
   readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true;
-  (MOBILE ? loadFrames2() : loadVideo2()).then(() => MOBILE ? loadFrames3() : loadVideo3());
+  (MOBILE ? loadFrames2() : loadVideo2()).then(() => MOBILE ? loadFrames3() : loadVideo3()).then(() => { talk.preload = 'auto'; talk.src = TALK; });
 });
 resize();
 </script>

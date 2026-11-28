@@ -360,7 +360,8 @@ export function ctaRect3(vis) {
 }
 // менеджер: точка на плече → линия → плашка слева на уровне груди (компьютер) / чип над головой (телефон)
 function manager(t, vis) {
-  if (MOB) {
+  if (MOB) return;                              // телефон: чип заменён кнопкой «▶ ПОСЛУШАТЬ МЕНЕДЖЕРА» (DOM)
+  if (false) {
     const a = eo((t - .8) / .45); if (a <= 0) return;
     const lbl = 'ВАШ МЕНЕДЖЕР ↓'; g.font = HEAVY(19); const w = g.measureText(lbl).width + 30, h = 40;
     const cx = .497 * W, x = clamp(cx - w / 2, vis.x0 + 12, vis.x1 - 12 - w), y = H * .402 + (1 - a) * 14;
@@ -385,8 +386,12 @@ function manager(t, vis) {
   g.fillStyle = OR; g.fillRect(px + pw - 8, py, 8, ph);
   txt('ВАШ МЕНЕДЖЕР', px + 22, py + 38, HEAVY(27), GR);
   txt('ПОКАЖЕТ КВАРТИРУ 9.04', px + 22, py + 64, MONO(15), GR);
-  txt('● ЗДЕСЬ ОНА ЗАГОВОРИТ (HEYGEN)', px + 22, py + 96, MONO(12), OR);
-  g.restore();
+  g.restore();                                  // третья строка плашки — кнопка «▶ ПОСЛУШАТЬ» (DOM, talkRect3)
+}
+// кнопка «послушать менеджера»: компьютер — третья строка плашки менеджера; телефон — на месте чипа над головой
+export function talkRect3(vis) {
+  if (MOB) { const w = 300, h = 46, cx = .497 * W; return { x: clamp(cx - w / 2, vis.x0 + 12, vis.x1 - 12 - w), y: H * .395, w, h, fs: 16 }; }
+  const px = W * .27, py = H * .52; return { x: px + 22, y: py + 76, w: W * .447 - px - 52, h: 34, fs: 14 };
 }
 function finale3(t, vis) {
   const k = eo((t - 2.0) / .55); if (k <= 0) return;
@@ -403,9 +408,13 @@ function finale3(t, vis) {
   }
   g.restore();
 }
-export function drawAtom3(ctx, t, vis) {
+// mode: 'idle' — до разговора (метки, менеджер, полоса); 'talk' — говорит видео HeyGen, холст пуст; 'end' — после слов: метки + полоса с кнопкой записи
+export function drawAtom3(ctx, t, vis, mode = 'idle') {
   g = ctx; t = clamp(t, 0, T3_END);
-  marks(t, vis, 'ДВОР · ВСТРЕЧА НА ПРОСМОТРЕ', 1e9, MOB ? 1e9 : 1.8); manager(t, vis); finale3(t, vis); // нижние метки уступают полосе
+  if (mode === 'talk') return;
+  marks(t, vis, 'ДВОР · ВСТРЕЧА НА ПРОСМОТРЕ', 1e9, MOB ? 1e9 : 1.8); // нижние метки уступают полосе
+  if (mode === 'idle') manager(t, vis);
+  finale3(t, vis);
 }
 
 // ═════════ живые предметы гостиной: наведение → контур по маске + плашка с ценой ═════════
