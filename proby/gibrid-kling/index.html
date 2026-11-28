@@ -14,11 +14,11 @@
   html, body { background: #1a1c1a; color: var(--gr); }
   body { font-family: var(--mono); -webkit-font-smoothing: antialiased; }
   html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
-  #scroller { height: 1200vh; position: relative; }
+  #scroller { height: 1900vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; height: 100dvh; width: 100%; overflow: hidden; }
-  #vid, #vid2, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #vid, #vid2, #poster img { object-fit: cover; }
-  #vid2 { visibility: hidden; }
+  #vid, #vid2, #vid3, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vid, #vid2, #vid3, #poster img { object-fit: cover; }
+  #vid2, #vid3 { visibility: hidden; }
   #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(70% 70% at 50% 48%, #FFFEFA 0%, #FFF4DF 38%, #F8E1BD 75%, #EFCFA2 100%); }
 
@@ -40,10 +40,10 @@
     background: radial-gradient(120% 90% at 0% 0%, rgba(240,238,230,.95) 0%, rgba(240,238,230,.86) 38%, rgba(240,238,230,0) 70%); }
 
   /* счётчик «до окна» */
-  #dist { position: absolute; right: 4vw; bottom: 9vh; z-index: 4; text-align: right; font-size: 13px; letter-spacing: .16em; color: var(--por);
+  #dist, #dist3 { position: absolute; right: 4vw; bottom: 9vh; z-index: 4; text-align: right; font-size: 13px; letter-spacing: .16em; color: var(--por);
     background: rgba(34,37,34,.62); padding: 14px 20px 12px; }
-  #dist .n { font: var(--heavy); font-size: clamp(40px, 5vw, 84px); letter-spacing: 0; font-variant-numeric: tabular-nums; display: block; line-height: 1; margin-top: 6px; }
-  #dist .n i { font-style: normal; opacity: .55; font-size: .5em; margin-left: .15em; }
+  #dist .n, #dist3 .n { font: var(--heavy); font-size: clamp(40px, 5vw, 84px); letter-spacing: 0; font-variant-numeric: tabular-nums; display: block; line-height: 1; margin-top: 6px; }
+  #dist .n i, #dist3 .n i { font-style: normal; opacity: .55; font-size: .5em; margin-left: .15em; }
 
   #hint { position: absolute; left: 50%; bottom: 3.2vh; transform: translateX(-50%); font-size: 12px; letter-spacing: .2em; z-index: 4; color: var(--por);
     text-shadow: 0 1px 8px rgba(0,0,0,.5); }
@@ -55,7 +55,7 @@
   #cta.on { pointer-events: auto; }
   #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; font-size: 12px; letter-spacing: .2em; color: var(--por);
     background: rgba(34,37,34,.8); padding: 14px 22px; transition: opacity .3s; }
-  #load2 { position: absolute; right: 4vw; bottom: 3vh; z-index: 9; font-size: 11px; letter-spacing: .2em; color: var(--por);
+  #load2, #load3 { position: absolute; right: 4vw; bottom: 3vh; z-index: 9; font-size: 11px; letter-spacing: .2em; color: var(--por);
     background: rgba(34,37,34,.8); padding: 8px 14px; opacity: 0; transition: opacity .3s; }
   /* телефон / узкий экран: лёгкая вертикальная последовательность кадров (frames-m/, вместо видео — iOS медленно перематывает) и раскладка атома */
   @media (max-aspect-ratio: 4/5), (max-width: 699px) {
@@ -64,8 +64,8 @@
     .hd { left: 5vw; top: 13vh; }
     .hd .cap { font-size: 11px; letter-spacing: .14em; margin-bottom: 14px; }
     .hd .ln span { font-size: clamp(36px, 11.5vw, 64px); }
-    #dist { right: 5vw; bottom: 8vh; padding: 10px 14px 9px; font-size: 11px; }
-    #dist .n { font-size: clamp(36px, 11vw, 60px); }
+    #dist, #dist3 { right: 5vw; bottom: 8vh; padding: 10px 14px 9px; font-size: 11px; }
+    #dist .n, #dist3 .n { font-size: clamp(36px, 11vw, 60px); }
     #hint { bottom: 2.6vh; }
     #note { left: 5vw; bottom: auto; top: 64px; font-size: 10px; background: rgba(34,37,34,.6); padding: 5px 8px 4px; text-shadow: none; }
     .scrim { background: radial-gradient(170% 75% at 0% 0%, rgba(240,238,230,.95) 0%, rgba(240,238,230,.86) 45%, rgba(240,238,230,0) 78%); }
@@ -77,6 +77,7 @@
   <div id="stage">
     <video id="vid" muted playsinline preload="auto"></video>
     <video id="vid2" muted playsinline preload="auto"></video>
+    <video id="vid3" muted playsinline preload="auto"></video>
     <canvas id="seq"></canvas>
     <picture id="poster"><source media="(max-aspect-ratio: 4/5), (max-width: 699px)" srcset="poster-m.jpg"><img src="poster.jpg" alt=""></picture>
     <div id="flash"></div>
@@ -104,20 +105,28 @@
       <div class="ln acc"><span>НАПРАВО.</span></div>
     </div>
 
+    <div class="hd" id="h4" data-seg="3" data-from="0.395" data-to="0.60">
+      <div class="cap">ВНИЗ · ДВОР КВАРТАЛА</div>
+      <div class="ln"><span>ДВОР</span></div>
+      <div class="ln acc"><span>БЕЗ МАШИН.</span></div>
+    </div>
+
     <div id="dist">ДО ОКНА<span class="n">240<i>М</i></span></div>
+    <div id="dist3" style="opacity:0">ДО ВСТРЕЧИ<span class="n">043<i>М</i></span></div>
     <div id="hint">ЛИСТАЙТЕ ↓</div>
     <div id="note">ПРОБА · ЖК И ЦИФРЫ ВЫДУМАНЫ</div>
     <button id="cta" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
     <div id="load">ЗАГРУЗКА 0%</div>
     <div id="load2">КУХНЯ 0%</div>
+    <div id="load3">ДВОР 0%</div>
   </div>
 </div>
 
 <script type="module">
-import { drawAtom, drawAtom2, drawTurn, drawHot, ctaRect, setMobile, T_END, T2_END, W, H } from "./atom.js?v=13";
+import { drawAtom, drawAtom2, drawAtom3, drawTurn, drawHot, ctaRect3, setMobile, T_END, T2_END, T3_END, W, H } from "./atom.js?v=16";
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
-const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen72.mp4'; // кухня досчитана до 72 к/с: быстрый поворот при 24 к/с шёл ступеньками // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
+const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen72.mp4', VIDEO3 = 'yard.mp4'; // двор: kling3 (до 3,75 с) + kling4 + kling6, 24 к/с; // кухня досчитана до 72 к/с: быстрый поворот при 24 к/с шёл ступеньками // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
 // телефон: Safari медленно перематывает видео (лаг на iPhone 15) — вместо видео кадры WebP 640×1072 на холсте
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -125,18 +134,22 @@ const sm = p => { p = clamp(p); return p * p * (3 - 2 * p); };
 const eo = p => { p = clamp(p); return 1 - Math.pow(1 - p, 3); };
 const $ = s => document.querySelector(s);
 
-const vid = $('#vid'), vid2 = $('#vid2'), poster = $('#poster'), flash = $('#flash'), cv = $('#atom'), ctx = cv.getContext('2d'),
+const vid = $('#vid'), vid2 = $('#vid2'), vid3 = $('#vid3'), dist3 = $('#dist3'), dist3N = $('#dist3 .n'), load3 = $('#load3'), poster = $('#poster'), flash = $('#flash'), cv = $('#atom'), ctx = cv.getContext('2d'),
       distEl = $('#dist'), distN = $('#dist .n'), hint = $('#hint'), cta = $('#cta'), prog = $('#progress'),
       bar = $('#bar'), note = $('#note'), scrim = $('#scrim'), load = $('#load'), load2 = $('#load2');
 const heads = [...document.querySelectorAll('.hd')].map(el => ({ seg: +(el.dataset.seg || 1),
   el, from: +el.dataset.from, to: +el.dataset.to, cap: el.querySelector('.cap'), spans: [...el.querySelectorAll('.ln span')] }));
 
-// ── две части прокрутки: 1 — пролёт в гостиную + атом гостиной (прежние 660vh), 2 — поворот на кухню + атом кухни ──
+// ── три части прокрутки: 1 — пролёт в гостиную + атом гостиной (прежние 660vh), 2 — поворот на кухню + атом кухни,
+// 3 — вылет из окна кухни во двор и подлёт к менеджеру у арки (+700vh). Части 1–2 считаются в прежних координатах pp = p / OLD ──
+const OLD = 1200 / 1900;
+const P3_0 = OLD * .985;          // часть 3 (r) стартует, когда атом кухни ушёл (q ≈ .985)
 const SEG1 = 660 / 1200;          // часть 1 в прежних координатах p1 = p / SEG1
 const P2_0 = SEG1 * .97;          // часть 2 стартует, когда атом гостиной ушёл (p1 = .97)
 const V_END = .55;                // часть 1: видео на p1 0 … .55, дальше держит последний кадр
 const ATOM_A = .47, ATOM_B = .96; // часть 1: атом стартует на влёте (стык 4,3–4,7 с закрыт вспышкой)
 const V2_END = .40, ATOM2_A = .33, ATOM2_B = .97; // часть 2 (q): видео поворота, атом кухни с конца поворота
+let dur3 = 18.83, ready3 = false;
 let dur = 5.04, dur2 = 5.04, k = 1, ox = 0, oy = 0, dpr = 1, vis = { x0: 0, y0: 0, x1: W, y1: H };
 
 // ── карта прокрутка → время видео. Kling разгоняет камеру неравномерно (пик +3…4 %/кадр на 85→51 м,
@@ -155,11 +168,23 @@ function videoTime(p) {
 // поворот: камера стоит на краях и разгоняется до ×9 в середине (оптический поток по кадрам) —
 // вес кадра = поток + 1,5: середина растянута по прокрутке, мягкий разгон и торможение сохранены
 const LUT2 = [0.0000, 0.0027, 0.0066, 0.0105, 0.0143, 0.0181, 0.0219, 0.0260, 0.0300, 0.0343, 0.0388, 0.0436, 0.0486, 0.0537, 0.0588, 0.0641, 0.0697, 0.0755, 0.0816, 0.0881, 0.0949, 0.1021, 0.1099, 0.1180, 0.1266, 0.1355, 0.1450, 0.1549, 0.1653, 0.1762, 0.1872, 0.1982, 0.2096, 0.2216, 0.2339, 0.2464, 0.2593, 0.2726, 0.2863, 0.2997, 0.3132, 0.3268, 0.3409, 0.3549, 0.3691, 0.3835, 0.3979, 0.4120, 0.4264, 0.4409, 0.4552, 0.4693, 0.4836, 0.4979, 0.5129, 0.5285, 0.5436, 0.5587, 0.5735, 0.5881, 0.6025, 0.6164, 0.6306, 0.6444, 0.6576, 0.6705, 0.6828, 0.6946, 0.7061, 0.7168, 0.7262, 0.7346, 0.7429, 0.7512, 0.7600, 0.7686, 0.7774, 0.7860, 0.7946, 0.8032, 0.8121, 0.8204, 0.8282, 0.8354, 0.8420, 0.8484, 0.8547, 0.8608, 0.8668, 0.8728, 0.8785, 0.8841, 0.8893, 0.8947, 0.8999, 0.9050, 0.9101, 0.9152, 0.9202, 0.9252, 0.9300, 0.9346, 0.9392, 0.9436, 0.9479, 0.9520, 0.9559, 0.9596, 0.9633, 0.9668, 0.9702, 0.9736, 0.9769, 0.9802, 0.9833, 0.9863, 0.9892, 0.9920, 0.9947, 0.9974, 1.0000];
-121
 function videoTime2(q) {
   const u = clamp(q / V2_END); let lo = 0, hi = LUT2.length - 1;
   while (hi - lo > 1) { const m = (lo + hi) >> 1; if (LUT2[m] <= u) lo = m; else hi = m; }
   return Math.min(dur2 - .001, (lo + (u - LUT2[lo]) / ((LUT2[hi] - LUT2[lo]) || 1)) / 24);
+}
+
+// часть 3 (r): видео на r 0 … V3_END, дальше стоит последний кадр (финал у арки).
+// доля прокрутки по кускам: вылет из окна (0–3,75 с) — .20, спуск над двором kling4 (3,75–8,79 с, медленный) — .17,
+// пролёт по двору kling6 (8,79–18,83 с, ровная скорость) — .43
+const V3_END = .80, ATOM3_A = .80, ATOM3_B = .97;
+const MAP3 = [[0, 0], [.20, 3.75], [.37, 8.79], [V3_END, 18.83]];
+function videoTime3(r) {
+  r = clamp(r, 0, V3_END);
+  for (let i = 1; i < MAP3.length; i++) if (r <= MAP3[i][0]) {
+    const [r0, t0] = MAP3[i - 1], [r1, t1] = MAP3[i]; return Math.min(dur3 - .001, t0 + (t1 - t0) * (r - r0) / (r1 - r0));
+  }
+  return dur3 - .001;
 }
 
 // ── видео: грузим целиком в blob, чтобы скраб не ждал сеть ──
@@ -185,8 +210,17 @@ async function loadVideo2() { // часть 2 грузится фоном, по�
   vid2.play().then(() => { vid2.pause(); s2.go(s2.want); }).catch(() => {});
   await ready(vid2); dur2 = vid2.duration || dur2; ready2 = true; window.__ready2 = true; render(cur);
 }
+async function loadVideo3() { // часть 3 грузится фоном после кухни
+  vid3.src = await fetchBlob(VIDEO3, n => load3.textContent = 'ДВОР ' + n + '%');
+  vid3.play().then(() => { vid3.pause(); s3.go(s3.want); }).catch(() => {});
+  await ready(vid3); dur3 = vid3.duration || dur3; ready3 = true; window.__ready3 = true; render(cur);
+}
 
 // ── телефон: кадры-картинки на холсте, между соседними кадрами — смешивание ──
+// двор: вылет из окна (0–3,75 с) быстрый — там 24 к/с без смешивания (смешивание давало двойную экспозицию),
+// дальше камера медленная — 12 к/с со смешиванием. Кадры 0–89 — 24 к/с, 90–270 — 12 к/с
+const NF3 = 271, FR3 = 12, A3 = 90, TA3 = 3.75, frames3 = [];
+const frame3 = t => t < TA3 ? t * 24 : A3 + (t - TA3) * FR3;
 const NF = 121, FR = 24, NF2 = 358, FR2 = 72, frames1 = [], frames2 = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
 let lastKey = '';
 function loadSet(dir, arr, onPct, NF = 121) {
@@ -204,13 +238,17 @@ async function loadFrames2() {
   await loadSet('frames-m3', frames2, n => load2.textContent = 'КУХНЯ ' + n + '%', NF2);
   dur2 = NF2 / FR2; ready2 = true; window.__ready2 = true; lastKey = ''; render(cur);
 }
+async function loadFrames3() { // двор: 12 к/с, между кадрами — смешивание
+  await loadSet('frames-m4', frames3, n => load3.textContent = 'ДВОР ' + n + '%', NF3);
+  dur3 = TA3 + (NF3 - 1 - A3) / FR3; ready3 = true; window.__ready3 = true; lastKey = ''; render(cur);
+}
 function drawSeq(set, id, vt) {
-  const n = id === 1 ? NF : NF2, f = clamp(vt * (id === 1 ? FR : FR2), 0, n - 1), key = id + ':' + f.toFixed(2); if (key === lastKey) return; lastKey = key;
-  const i = id === 1 ? Math.floor(f) : Math.round(f), a = f - i;
+  const n = [0, NF, NF2, NF3][id], f = clamp(id === 3 ? frame3(vt) : vt * [0, FR, FR2][id], 0, n - 1), key = id + ':' + f.toFixed(2); if (key === lastKey) return; lastKey = key;
+  const blend = id === 1 || (id === 3 && f >= A3), i = blend ? Math.floor(f) : Math.round(f), a = f - i;
   sctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
   sctx.globalAlpha = 1; if (set[i]?.complete) sctx.drawImage(set[i], 0, 0, W, H);
   // поворот на кухню быстрый: смешивание дало бы двойной контур — там ближайший кадр
-  if (id === 1 && a > .03 && set[i + 1]?.complete) { sctx.globalAlpha = a; sctx.drawImage(set[i + 1], 0, 0, W, H); }
+  if (blend && a > .03 && set[i + 1]?.complete) { sctx.globalAlpha = a; sctx.drawImage(set[i + 1], 0, 0, W, H); }
 }
 
 // ── скраб: одна перемотка за раз, последняя цель не теряется ──
@@ -220,7 +258,7 @@ function seeker(v) {
   v.addEventListener('seeked', () => { s.busy = false; if (Math.abs(v.currentTime - s.want) > .02) s.go(s.want); });
   return s;
 }
-const s1 = seeker(vid), s2 = seeker(vid2);
+const s1 = seeker(vid), s2 = seeker(vid2), s3 = seeker(vid3);
 
 
 // ── живые предметы: с кадра гостиной (видео стоит, p1 ≥ V_END) наведение мышью / тап → контур по маске + плашка ──
@@ -255,7 +293,7 @@ stage.addEventListener('click', e => { if (!MOBILE || !hotOn) return; const h = 
   hot.tap = h && !(hot.tap && hot.want) ? h : null; hotUpdate(); kick(); }); // второй тап — закрыть
 
 function placeCta() {
-  const r = ctaRect(vis);
+  const r = ctaRect3(vis);
   Object.assign(cta.style, { left: ox + r.x * k + 'px', top: oy + r.y * k + 'px', width: r.w * k + 'px', height: r.h * k + 'px', fontSize: Math.max(12, r.fs * k) + 'px' });
 }
 function resize() {
@@ -269,13 +307,16 @@ function resize() {
 addEventListener('resize', resize);
 
 function render(p) {
-  const p1 = p / SEG1, q = (p - P2_0) / (1 - P2_0), inB = q > 0, showB = inB && ready2;
-  const vt = videoTime(Math.min(p1, 1)), vt2 = videoTime2(q);
-  if (MOBILE) { if (showB) drawSeq(frames2, 2, vt2); else drawSeq(frames1, 1, vt); }
+  const pp = Math.min(p / OLD, 1), p1 = pp / SEG1, q = (pp - P2_0) / (1 - P2_0), inB = q > 0, showB = inB && ready2;
+  const r = (p - P3_0) / (1 - P3_0), inC = r > 0, showC = inC && showB && ready3;
+  const vt = videoTime(Math.min(p1, 1)), vt2 = videoTime2(q), vt3 = videoTime3(r);
+  if (MOBILE) { if (showC) drawSeq(frames3, 3, vt3); else if (showB) drawSeq(frames2, 2, vt2); else drawSeq(frames1, 1, vt); }
   else {
-    vid2.style.visibility = showB ? 'visible' : 'hidden';
-    if (showB) s2.go(vt2); else s1.go(vt - (p1 >= V_END ? .001 : 0));
+    vid2.style.visibility = showB && !showC ? 'visible' : 'hidden';
+    vid3.style.visibility = showC ? 'visible' : 'hidden';
+    if (showC) s3.go(vt3); else if (showB) s2.go(vt2); else s1.go(vt - (p1 >= V_END ? .001 : 0));
   }
+  load3.style.opacity = inC && !ready3 ? 1 : 0;
   load2.style.opacity = inB && !ready2 ? 1 : 0; // долистали до кухни раньше, чем она загрузилась
   // вспышка влёта: свет из окна закрывает стык 4,3–4,7 с (импост и картина) — по реальному времени видео
   flash.style.opacity = (clamp((1 - Math.abs(vt - 4.54) / .38) * 1.6) ** .7 * .94).toFixed(3); // плато 4,40–4,68 с
@@ -286,15 +327,17 @@ function render(p) {
   if (p1 > ATOM_A && !inB) drawAtom(ctx, ta, vis);
   const on = !inB && p1 >= V_END + .005; if (on !== hotOn) { hotOn = on; if (!on) hot.tap = null; hotUpdate(); }
   if (!inB) drawHot(ctx, hot.it, hot.a, hot.px, hot.py, vis);
-  if (showB) drawTurn(ctx, vt2, vis);
-  if (q > ATOM2_A) drawAtom2(ctx, ta2, vis);
+  if (showB && !showC) drawTurn(ctx, vt2, vis);
+  if (q > ATOM2_A && !showC) drawAtom2(ctx, ta2, vis);
+  const ta3 = T3_END * clamp((r - ATOM3_A) / (ATOM3_B - ATOM3_A));
+  if (showC && r > ATOM3_A) drawAtom3(ctx, ta3, vis);
 
-  const loc = h => h.seg === 2 ? q : p1;
-  const vis2 = h => sm((loc(h) - h.from) / .03) * (1 - sm((loc(h) - h.to + .06) / .03));
+  const loc = h => h.seg === 3 ? r : h.seg === 2 ? q : p1;
+  const vis2 = h => sm((loc(h) - h.from) / .03) * (1 - sm((loc(h) - h.to + (h.seg === 3 ? .025 : .06)) / .03)); // двор: подложка держится, пока строки не ушли с фасада
   scrim.style.opacity = Math.max(...heads.map(vis2));
   for (const h of heads) {
     const span = h.to - h.from, x = loc(h);
-    h.cap.style.opacity = h.seg === 2 ? vis2(h) * (1 - sm((x - h.to + .085) / .02)) : vis2(h); // подпись поворота гаснет до ухода строк
+    h.cap.style.opacity = h.seg >= 2 ? vis2(h) * (1 - sm((x - h.to + .085) / .02)) : vis2(h); // подпись поворота гаснет до ухода строк
     h.spans.forEach((s, j) => {
       const a = eo((x - h.from - j * .012) / (span * .35));
       const e = eo((x - h.to + .045 - j * .008) / .045);
@@ -308,7 +351,11 @@ function render(p) {
   bar.style.opacity = 1 - sm((p1 - .44) / .04);           // внутри бренд несёт метка атома
   note.style.opacity = (MOBILE ? 1 : .7) * (1 - sm((p1 - .44) / .04));
   hint.style.opacity = 1 - sm(p1 / .03);
-  const c = sm((ta2 - 8.15) / .4);
+  // часть 3: счётчик «до встречи» 43 → 0 м на пролёте по двору (kling6)
+  const u3 = clamp((r - .37) / (V3_END - .37));
+  dist3N.firstChild.nodeValue = String(Math.round(43 * (1 - u3))).padStart(3, '0');
+  dist3.style.opacity = showC ? sm((r - .37) / .03) * (1 - sm((r - V3_END + .02) / .03)) : 0;
+  const c = showC ? sm((ta3 - 2.6) / .4) : 0;
   cta.style.opacity = c; cta.classList.toggle('on', c > .5);
   prog.style.width = (p * 100).toFixed(2) + '%';
 }
@@ -327,14 +374,14 @@ function loop() {
 // для проверки кадров: прыжок к прогрессу p, промис ждёт готовый кадр видео
 window.__jump = p => new Promise(res => {
   const m = document.documentElement.scrollHeight - innerHeight; scrollTo(0, p * m); tgt = cur = p; render(p);
-  const done = () => (s1.busy || s2.busy ? setTimeout(done, 30) : requestAnimationFrame(() => requestAnimationFrame(() => res(true))));
+  const done = () => (s1.busy || s2.busy || s3.busy ? setTimeout(done, 30) : requestAnimationFrame(() => requestAnimationFrame(() => res(true))));
   done();
 });
 cta.addEventListener('click', () => alert('Это проба: запись на просмотр появится на настоящем сайте.'));
 
 Promise.all([document.fonts.ready, MOBILE ? loadFrames() : loadVideo()]).then(() => {
   readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true;
-  MOBILE ? loadFrames2() : loadVideo2();
+  (MOBILE ? loadFrames2() : loadVideo2()).then(() => MOBILE ? loadFrames3() : loadVideo3());
 });
 resize();
 </script>

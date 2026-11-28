@@ -235,8 +235,9 @@ const HD2 = [
   [2.0, ['ОСТРОВ', 'ВМЕСТО СТОЛА.']],
   [4.0, ['ШКАФЫ', 'ДО ПОТОЛКА.']],
   [6.0, ['УЖИН —', 'НА ЗАКАТЕ.']],
-  [7.6, ['ЗАЕЗЖАЙТЕ', 'В ДЕНЬ СДЕЛКИ.']],
+  [7.6, ['ДАЛЬШЕ —', 'ВО ДВОР ↓']],
 ];
+const OUT2 = 8.9; // атом кухни целиком уходит к T2_END — дальше вылет во двор (часть 3)
 export const T2_END = 9;
 
 // плашка поворота (только компьютер): закрывает правый край кадра x > .775, где штора Kling
@@ -338,9 +339,73 @@ function callouts2(t, vis) {
 
 export function drawAtom2(ctx, t, vis) {
   g = ctx; t = clamp(t, 0, T2_END);
-  marks(t, vis, 'КВАРТИРА 9.04 · СХЕМА 02 / 02', 1e9, 7.6);
-  heading(t, vis, HD2, 1e9, .31, MOB ? Z.head.y0 : .022);
-  drum2(t, vis); callouts2(t, vis); finale(t, vis);
+  marks(t, vis, 'КВАРТИРА 9.04 · СХЕМА 02 / 02', OUT2 - .45);
+  heading(t, vis, HD2, OUT2, .31, MOB ? Z.head.y0 : .022);
+  drum2(t, vis); callouts2(t, vis);
+}
+
+// ═════════ часть 3: двор → встреча с менеджером у арки ═════════
+// финальный кадр пролёта (по глазу Opus, доли кадра): девушка x .468–.534 / y .457–.882, лицо y .466–.526;
+// газон слева x .03–.44 / y .84–.96 спокоен; полоса во всю ширину внизу закрыла бы ступни.
+// телефон (вырезка x 648–1288): девушка x .397–.597; низ занят ногами → финальная плашка сверху, y .21–.39
+export const T3_END = 6;
+export function finaleRect3(vis) {
+  if (MOB) { const x = vis.x0 + 16, w = vis.x1 - vis.x0 - 32, y = Math.max(H * .205, vis.y0 + 200), h = 186; return { x, y, w, h }; }
+  const x = Math.max(vis.x0 + 40, W * .03), w = W * .44 - x, h = 178, y = Math.min(H * .80, Math.min(H, vis.y1) - 30 - h); return { x, y, w, h };
+}
+export function ctaRect3(vis) {
+  const r = finaleRect3(vis);
+  if (MOB) return { x: r.x + 18, y: r.y + r.h - 18 - 56, w: r.w - 36, h: 56, fs: 19 };
+  return { x: r.x + 36, y: r.y + r.h - 28 - 58, w: Math.min(430, r.w - 72), h: 58, fs: 19 };
+}
+// менеджер: точка на плече → линия → плашка слева на уровне груди (компьютер) / чип над головой (телефон)
+function manager(t, vis) {
+  if (MOB) {
+    const a = eo((t - .8) / .45); if (a <= 0) return;
+    const lbl = 'ВАШ МЕНЕДЖЕР ↓'; g.font = HEAVY(19); const w = g.measureText(lbl).width + 30, h = 40;
+    const cx = .497 * W, x = clamp(cx - w / 2, vis.x0 + 12, vis.x1 - 12 - w), y = H * .402 + (1 - a) * 14;
+    plate(x, y, w, h, a, 'rgba(34,37,34,.86)'); txt(lbl, x + 15, y + 28, HEAVY(19), POR, a);
+    return;
+  }
+  const ax = W * .474, ay = H * .575, px = W * .27, py = H * .52, pw = W * .447 - px;
+  const d = eo((t - .6) / .3), r = ((t - .6) % 1.4) / 1.4;
+  if (t > .6) {
+    g.save(); g.strokeStyle = OR; g.lineWidth = 3; g.globalAlpha = (1 - r) * d;
+    g.beginPath(); g.arc(ax, ay, 8 + r * 22, 0, 7); g.stroke();
+    g.globalAlpha = d; g.fillStyle = OR; g.beginPath(); g.arc(ax, ay, 8, 0, 7); g.fill();
+    g.fillStyle = POR; g.beginPath(); g.arc(ax, ay, 3, 0, 7); g.fill();
+    const L = eo((t - .75) / .4), x1 = ax - (ax - (px + pw)) * L;
+    g.strokeStyle = POR; g.lineWidth = 3; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 6;
+    g.beginPath(); g.moveTo(ax - 8, ay); g.lineTo(x1, ay); g.stroke(); g.restore();
+  }
+  const pA = eo((t - 1.1) / .4); if (pA <= 0) return;
+  const ph = H * .63 - py;
+  plate(px + pw * (1 - pA), py, pw * pA, ph, 1, 'rgb(240,238,230)');
+  g.save(); g.beginPath(); g.rect(px + pw * (1 - pA), py, pw * pA, ph); g.clip();
+  g.fillStyle = OR; g.fillRect(px + pw - 8, py, 8, ph);
+  txt('ВАШ МЕНЕДЖЕР', px + 22, py + 38, HEAVY(27), GR);
+  txt('ПОКАЖЕТ КВАРТИРУ 9.04', px + 22, py + 64, MONO(15), GR);
+  txt('● ЗДЕСЬ ОНА ЗАГОВОРИТ (HEYGEN)', px + 22, py + 96, MONO(12), OR);
+  g.restore();
+}
+function finale3(t, vis) {
+  const k = eo((t - 2.0) / .55); if (k <= 0) return;
+  const { x, y, w, h } = finaleRect3(vis);
+  plate(x, y, w * k, h, 1, 'rgba(34,37,34,.9)');
+  g.save(); g.beginPath(); g.rect(x, y, w * k, h); g.clip();
+  if (MOB) {
+    txt('двор без машин ·', x + 18, y + 36, SERIF(28), POR);
+    txt('встреча у арки', x + 18, y + 66, SERIF(28), POR);
+    txt('ЖК ЛИНИЯ · ПРОБА, ДАННЫЕ ВЫДУМАНЫ', x + 19, y + 92, MONO(13), '#D6D9D3');
+  } else {
+    txt('Двор без машин · встреча у арки', x + 36, y + 50, SERIF(38), POR);
+    txt('ЖК ЛИНИЯ · ПРОБА, ДАННЫЕ ВЫДУМАНЫ', x + 37, y + 80, MONO(15), '#BFC3BD');
+  }
+  g.restore();
+}
+export function drawAtom3(ctx, t, vis) {
+  g = ctx; t = clamp(t, 0, T3_END);
+  marks(t, vis, 'ДВОР · ВСТРЕЧА НА ПРОСМОТРЕ', 1e9, MOB ? 1e9 : 1.8); manager(t, vis); finale3(t, vis); // нижние метки уступают полосе
 }
 
 // ═════════ живые предметы гостиной: наведение → контур по маске + плашка с ценой ═════════
