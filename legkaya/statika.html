@@ -446,7 +446,8 @@ function ulWant(u){
  return s[1]==='H'?{H:v,T:1}:{H:1,T:v}}
 function ulSet(p,v){if(v==null)v=p.ulw;else p.ulw=v;if(v==null||p.ulc===v)return;p.ulc=v;const d=p.f.contentDocument;if(!d)return;
  const R=p.ulr||(p.ulr=[d,...[...d.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.shadowRoot)]);   // заголовок вступления — в shadow root
- R.forEach(r=>r.querySelectorAll('.acc path').forEach(q=>{const L=parseFloat(q.style.strokeDasharray||getComputedStyle(q).strokeDasharray)||102;q.style.strokeDashoffset=(L*(1-v)).toFixed(2)}))}
+ R.forEach(r=>r.querySelectorAll('.acc path').forEach(q=>{const L=parseFloat(q.style.strokeDasharray||getComputedStyle(q).strokeDasharray)||102;q.style.strokeDashoffset=(L*(1-v)).toFixed(2)}));
+ const ob=p===PT.H&&d.getElementById('stOb');if(ob)ob.querySelectorAll('rect').forEach((q,i)=>q.style.strokeDashoffset=(1-cl((v-i*.08)/.68)).toFixed(4))}   // 28.11 рамки ШАГ №3 — тем же v
 /* 26.11 Владимир (статика): «имитацию сайта — чтобы на одном экране была верхняя часть с хедером, фоном, логотипом и лицом эксперта… чтобы всё на страницу уложилось».
    Страница сайта (1060×1320) в окне 836 px не прокручивается, а сжата: герой 420→240, карточки 150→96, эксперт 300×360→220×232, подвал 150→90. */
 const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#heroT{top:30px!important}#heroT h1{font-size:42px!important;margin-bottom:12px!important}'
@@ -455,7 +456,7 @@ const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#hero
  +'#mT{top:452px!important;font-size:26px!important}#sMP{top:496px!important;width:220px!important;height:232px!important}'
  +'#mI{left:280px!important;top:510px!important;width:740px!important}#mI b{font-size:30px!important}#mI .r{font-size:19px!important;margin-bottom:14px!important}'
  +'#mI .e{font-size:18px!important;margin-bottom:18px!important}#mI .q{font-size:21px!important}#foot{top:746px!important;height:90px!important}'
- +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}#tLogo,#tBtn,#tSvc,#sMP{outline:4px solid #C8102E!important;outline-offset:5px}#hero::before{content:"";position:absolute;inset:6px;border:4px solid #C8102E;border-radius:12px;background:none;z-index:3;pointer-events:none}#tLogo{border-radius:8px}#mPh{left:166px!important}#stAr{position:absolute;inset:0;pointer-events:none;z-index:60;display:none}#stAr i{position:absolute;top:532px;width:56px;height:56px;margin-left:-28px;border-radius:50%;background:#C8102E;box-shadow:0 8px 22px rgba(200,16,46,.28),0 0 0 5px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}#stAr svg{width:28px;height:28px}';
+ +'#fT{top:16px!important;font-size:22px!important}#fC{top:52px!important;font-size:17px!important}#stOb{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:visible}#stOb rect{fill:none;stroke:#C8102E;stroke-dasharray:1;stroke-dashoffset:1}#mPh{left:166px!important}#stAr{position:absolute;inset:0;pointer-events:none;z-index:60;display:none}#stAr i{position:absolute;top:532px;width:56px;height:56px;margin-left:-28px;border-radius:50%;background:#C8102E;box-shadow:0 8px 22px rgba(200,16,46,.28),0 0 0 5px rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}#stAr i svg{width:28px;height:28px}';
 /* 26.11 Владимир (статика): «все экраны — разный тон фона, оттенки серого, чтобы было видно, что начинается следующий экран».
    Фон сцены — ровный тон экрана (--tn) без пятен #bg; тон берётся по кадру, на котором стоит часть (меняется вместе с кадром, после seek).
    Тона блоков — CSS html.st в index.tpl.html. Светлые и тёмные чередуются: соседние экраны отличаются на 13–26 уровней. */
@@ -473,8 +474,16 @@ function stS3(d){const h=d.getElementById('hSb'),em=h&&h.querySelector('.acc em'
  if(h&&em&&h.firstChild.nodeType===3){h.firstChild.nodeValue='Собираем дополнительно ';em.textContent='материал с вашего сайта'}
  const st=d.getElementById('stage');if(!st||d.getElementById('stAr'))return;const a=d.createElement('div');a.id='stAr';
  const ar='<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
- a.innerHTML=`<i style="left:924px">${ar}</i><i style="left:1444px">${ar}</i>`;st.appendChild(a)}
-function stS3on(p,t){if(p!==PT.H)return;const a=p.f.contentDocument&&p.f.contentDocument.getElementById('stAr');if(a)a.style.display=Math.abs(t-30.55)<.01?'block':'none'}
+ a.innerHTML=`<svg id="stOb" viewBox="0 0 1920 1080">${'<rect pathLength="1"/>'.repeat(STOB.length)}</svg><i style="left:924px">${ar}</i><i style="left:1444px">${ar}</i>`;st.appendChild(a)}
+/* 28.11 Владимир (статика, ШАГ №3): «обводку сделаем такой же механикой, как подчёркивание заголовков» — красные рамки были outline/::before (стояли сразу),
+   теперь линии SVG поверх сцены (#stOb в #stAr: окно сайта #wview режет края, рамка снаружи элемента туда не влезает); рисует ulSet тем же v, что и линию заголовка,
+   по очереди: логотип → кнопка → интерьер → услуга → эксперт; назад сворачиваются. Геометрия — по рамкам элементов на кадре 30.55: снаружи o=+7 (как outline 4 px с отступом 5), интерьер — внутри (−8). */
+const STOB=[['tLogo',7,8],['tBtn',7,0],['hero',-8,0],['tSvc',7,0],['sMP',7,0]];
+function stObPos(d){const o=d.getElementById('stOb'),sg=d.getElementById('stage');if(!o||!sg)return;const S=sg.getBoundingClientRect(),sc=S.width/1920||1;
+ o.querySelectorAll('rect').forEach((q,i)=>{const [id,off,r0]=STOB[i],e=d.getElementById(id);if(!e||!e.offsetWidth)return;const b=e.getBoundingClientRect(),k=b.width/sc/e.offsetWidth,
+  g=off*k,x=(b.left-S.left)/sc-g,y=(b.top-S.top)/sc-g,w=b.width/sc+2*g,h=b.height/sc+2*g,r=Math.min(w/2,h/2,(id==='hero'?10:Math.max(r0,parseFloat(getComputedStyle(e).borderTopLeftRadius)||0)+7)*k);
+  q.setAttribute('x',x.toFixed(1));q.setAttribute('y',y.toFixed(1));q.setAttribute('width',w.toFixed(1));q.setAttribute('height',h.toFixed(1));q.setAttribute('rx',r.toFixed(1));q.style.strokeWidth=(4*k).toFixed(2)})}
+function stS3on(p,t){if(p!==PT.H)return;const a=p.f.contentDocument&&p.f.contentDocument.getElementById('stAr');if(a){const on=Math.abs(t-30.55)<.01;a.style.display=on?'block':'none';if(on)stObPos(p.f.contentDocument)}}
 function drive(p,t,key,pre){const w=p.f.contentWindow;
  if(t==null){if(p.on){p.on=false;w.__off()}return}
  p.on=true;
