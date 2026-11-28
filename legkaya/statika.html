@@ -492,7 +492,7 @@ function drive(p,t,key,pre){const w=p.f.contentWindow;
  p.on=true;
  if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;if(ST){stDoc(p);stS3on(p,t);stTone(p,t);p.ulc=null;if(p.ulr&&p.ulr.length<2)p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
  w.__sync()}
-let K=1,CY=540,VB=[0,1080];
+let K=1,CY=540,VB=[0,1080],END_D=0;
 /* сцена — как на главной: на всю ширину под шапкой (window.__COVER), на вертикальном экране — вписана */
 function fit(){const hh=$('hdr').offsetHeight,cv=!!window.__COVER&&innerWidth>=(innerHeight-hh)*1.4;K=(cv?Math.max:Math.min)(innerWidth/1920,(innerHeight-hh)/1080);document.documentElement.style.setProperty('--hk',K);
  const ov=1080*K-(innerHeight-hh),cut=ov>0?Math.min(ov/2,20):0;
@@ -501,7 +501,10 @@ function fit(){const hh=$('hdr').offsetHeight,cv=!!window.__COVER&&innerWidth>=(
  const aT=cy+Math.max(160*K,(660-540)*K+24);$('askB').style.top=aT+'px';
  /* 16.11: подвал наезжает на сцену так, чтобы в конце прокрутки его верх стоял на 48 px под кнопкой «Задайте нам вопрос»
     (было −16vh: на низких окнах вроде 1900×940 подвал задевал кнопку, на высоких под ней оставалась пустота) */
- $('ftr').style.marginTop=-Math.max(0,innerHeight-(aT+$('askB').offsetHeight+48))+'px';$('wrap').style.transform=`translate(-50%,-50%) scale(${K})`;
+ /* 28.11 Владимир (статика, экран логотипа): «это пространство нужно сделать меньше на 30 %» — и сверху, и снизу. ST: в конце тарифов сцена
+    поднимается дальше 0 на END_D = 30 % поля шапка → верх букв логотипа (сцена 450), подвал в конце сцены встаёт под кнопкой на 70 % поля кнопка → низ окна */
+ {const ab=aT+$('askB').offsetHeight;END_D=ST?Math.round(.3*Math.max(0,cy+(450-540)*K-hh)):0;
+  $('ftr').style.marginTop=-Math.max(0,innerHeight-(ST?ab-END_D+Math.round(.7*Math.max(0,innerHeight-ab)):ab+48))+'px'}$('wrap').style.transform=`translate(-50%,-50%) scale(${K})`;
  document.documentElement.style.setProperty('--gx',(cv?Math.min(40,Math.max(16,innerWidth*.03)):Math.max(16,(innerWidth-1920*K)/2+Math.min(40,60*K)))+'px');
  wsFit()}
 const hint=document.createElement('div');hint.id='hint';hint.innerHTML='<span>Листай</span><svg viewBox="0 0 130 160" aria-hidden="true"><path pathLength="100" d="M8 23 C 34 20, 62 21, 80 29 C 99 39, 104 80, 101 146"/><path pathLength="100" d="M76 122 C 85 130, 94 140, 101 148 C 108 139, 117 130, 126 121"/></svg>';document.body.appendChild(hint);
@@ -760,12 +763,16 @@ function fly56(k){const on=k>=0&&k<1,dH=PT.H.f.contentDocument,dT=PT.T.f.content
 let CMG=null;function cmGap(){const k=innerWidth+'x'+innerHeight;if(CMG&&CMG.k===k)return CMG;
  const r=(s,e)=>e.getBoundingClientRect().top-s.getBoundingClientRect().top,f=CMP.sec.querySelector('.cmF'),pk=PRP.sec.querySelector('.prK'),d=PRP.sec.style.display;
  PRP.sec.style.display='block';CMG={k,cb:Math.round(r(CMP.sec,f)+f.getBoundingClientRect().height),ct:Math.round(r(PRP.sec,pk))};PRP.sec.style.display=d;return CMG}
+// статика: сцена выше окна (top<0) — окно сцены длиннее на столько же и залито тоном экрана логотипа, иначе снизу полоса фона страницы
+function endPin(pin,e){if(e==null){if(pin.style.height){pin.style.height='';pin.style.background=''}return}
+ pin.style.top=e+'px';const h=`calc(100vh + ${-e}px)`;if(pin.style.height!==h){pin.style.height=h;pin.style.background=TN_T[TN_T.length-1][1]}}
 function wsPlace(){const U=scrollU(),pin=$('pin');let x=0,P=null;
  for(const p of PG){if(!p.sec)continue;const px=U-p.u0;if(px>0&&px<p.len){x=px;P=p}else if(p.sec.style.display!=='none')p.sec.style.display='none'}
  {const v=VDP.sec&&VDP.sec.querySelector('#vdV');if(v&&!v.paused&&P!==VDP)v.pause()}
  const dH=PT.H.f.contentDocument,dT=PT.T.f.contentDocument;
  if(P!==VDP){vdFly(null);vdOut(null)}
- if(!P){if(pin.style.top)pin.style.top='';if(pin.style.overflow)pin.style.overflow='';bgHold(dH,0);bgHold(dT,0);return}
+ if(!P&&ST&&U>=PRP.u0+PRP.len){endPin(pin,-END_D);bgHold(dT,0);return}   // статика: после тарифов сцена стоит поднятой на END_D
+ if(!P){if(ST)endPin(pin,null);if(pin.style.top)pin.style.top='';if(pin.style.overflow)pin.style.overflow='';bgHold(dH,0);bgHold(dT,0);return}
  const sec=P.sec;sec.style.display='block';
  const H=innerHeight,hs=P.hs||H,O=Math.round(CY-540*K+SEAM),hd=P.hold||0,xe=x<100?x:x<100+hd?100:x-hd;let ds,dp;
  // стоянка (hd vh): блок доехал (xe=100) и стоит — двигается только подчёркивание; вход и выход ниже считаются по xe
@@ -777,7 +784,7 @@ function wsPlace(){const U=scrollU(),pin=$('pin');let x=0,P=null;
   // сцена догоняет плавно, пока верх блока ещё за краем окна (ds H→H−45), без скачка
   if(ST&&P===VDP){const cb=CY+(1008-540)*K,e=Math.max(0,cb-H-45);dp=Math.min(0,Math.round(ds+45-cb+Math.max(0,e*(ds-H+45)/45)))}}
  else{const ex=P.len-100-hd;ds=ex>0?-Math.round((xe-100)*hs/ex):0;   // у сравнения ухода нет (ex=0, его толкают тарифы): без защиты 0/0 = NaN и блок застывал на кадре въезда
-  dp=Math.max(0,ds+hs-(P===PRP?Math.max(O,Math.round(383*K)):P===WSP||ST?O-SEAM:O))}   // 20.11 Владимир: «верх заголовка ШАГ №3 серый… должен быть чёрным сразу» — после Вордстата сцена идёт вплотную под его низом (низ без растушёвки, CSS), плашка и заголовок не под полупрозрачной полосой
+  dp=Math.max(ST&&P===PRP?-END_D:0,ds+hs-(P===PRP?Math.max(O,Math.round(383*K)):P===WSP||ST?O-SEAM:O))}   // 20.11 Владимир: «верх заголовка ШАГ №3 серый… должен быть чёрным сразу» — после Вордстата сцена идёт вплотную под его низом (низ без растушёвки, CSS), плашка и заголовок не под полупрозрачной полосой
  sec.style.transform=`translateY(${ds}px)`;
  // окно сцены (#pin, 100vh, overflow hidden) обрезает то, что ниже края окна: на въезде над ШАГ №4 открываем низ сцены, иначе срез просто едет вверх вместе с окном (глаз Opus); 27.11 строка стоит ПОСЛЕ if/else — вставка между ними отвязала else (выход блоков в статике не ехал)
  if(ST){const ov=P===VDP&&xe<100?'visible':'';if(pin.style.overflow!==ov)pin.style.overflow=ov}
@@ -798,7 +805,7 @@ function wsPlace(){const U=scrollU(),pin=$('pin');let x=0,P=null;
    if(c._m!=='none'){c._m='none';c.style.webkitMaskImage=c.style.maskImage='none'}
    c.style.zIndex=6;c.style.transform=`translateY(${dc}px)`;c.style.clipPath=`inset(0 0 ${Math.max(0,c.offsetHeight-cy)}px 0)`;bgCopy(c,P.part==='H'?dH:dT,dc)}
   else if(c.style.zIndex){c.style.zIndex='';c.style.clipPath='';c._m='';c.style.webkitMaskImage=c.style.maskImage=''}}
- pin.style.top=dp+'px';   /* сдвиг через top у sticky, не transform: transform предка резал 3D-карточки карусели */
+ pin.style.top=dp+'px';if(ST)endPin(pin,dp<0?dp:null);   /* сдвиг через top у sticky, не transform: transform предка резал 3D-карточки карусели */
  /* 16.11 (слово Владимира: «подчёркивание нужно анимировать скроллингом, больше ничего на экране не меняется»): линия под «самые запрашиваемые»
     рисуется на входе блока, x 20→65 (заголовок от низа к середине окна); назад — стирается; на выходе нарисована целиком
     16.11 (Владимир: «линия запечатана, ничего не двигается — сделай как на следующем экране»): рисуется на стоянке блока, x 100→140
