@@ -1,6 +1,5 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8">
-<meta name="robots" content="noindex,nofollow">
+<html lang="ru"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>СТАТИКА · mAInmodeL — экспертные ролики</title>
 <style>
@@ -337,7 +336,7 @@ const P56=46.45;   // 18.11 ШАГ №5 → №6: календарь стоит 
 const CM_ON=false;   // 21.11 Ф42: блок «Сколько приносят наши ролики» временно убран
 // 26.11 Владимир: «специальную версию… всю анимацию останавливаем, экраны в end-состоянии; из анимации остаются только ролики в плашках».
 // Статика (ST): ?static=1 или index-static.html (qa/static/mk_index_static.py ставит ST=true). Каждый экран стоит на своём конечном кадре;
-// блоки-страницы и сдвиг стена → календарь едут прокруткой, как обычная страница; ШАГ №3 → №4 и календарь → график — смена кадра без перелёта;
+// блоки-страницы и сдвиг стена → календарь едут прокруткой, как обычная страница; ШАГ №3 → №4 и календарь → график — переезд экрана (сегмент 'sl', 28.11), без перелёта карточек;
 // перелёты карточек (m34, vdFly/vdOut, дни m56), заполнение брифа, самолистание ленты и автоигра вступления — сразу в конце.
 // Ролики 'v' (part.js) играют, как раньше; ролики 's' (перемотка прокруткой) стоят. Без флага всё как было. Откат — src/qa/bak-static-2026-11-26/
 const ST=true;
@@ -350,11 +349,13 @@ const SEG_ST=[
  [140,'H', 3.30, 3.30,0,'page',40],   // бриф: строки сразу заполнены
  [240,'H', 3.30,30.55,1,'page',40],    // Вордстат; на уходе блока под ним сразу конец ШАГ №3
  [ 40,'H',30.55,30.55,2],              // ШАГ №3 стоит
- [ 40,'H',31.45,31.45,3],              // ШАГ №4 стоит: монтаж собран, ползунок в начале — видны первые кадры (Владимир 26.11)
+ [100,'H',30.55,30.55,2,'sl',0,{to:31.45}],   // 28.11 Владимир: «с ШАГ №3 скачок на следующий — должно быть плавное перемещение, как ШАГ №5 → №6»: ШАГ №3 уезжает вверх, ШАГ №4 (клон головы) въезжает снизу
+ [ 40,'H',31.45,31.45,3],            // ШАГ №4 стоит: монтаж собран, ползунок в начале — видны первые кадры (Владимир 26.11)
  [240,'H',31.45,41.70,3,'page',40],    // «Готовый результат»; смена под блоком на конец стены (41.70)
  [ 40,'H',41.70,41.70,4],              // ШАГ №5 стоит
  [100,'H',41.70,41.70,4,'m56'],        // стена уезжает вверх, календарь (TC) въезжает снизу, дни уже на месте
  [ 40,'T',TC,TC,5],                    // ШАГ №6 стоит
+ [100,'T',TC,TC,5,'sl',0,{to:54.30}],  // 28.11 Владимир: «тут то же самое» — календарь уезжает вверх, график (клон хвоста) въезжает снизу
  [ 40,'T',54.30,54.30,6],              // график стоит (линия дорисована)
  [240,'T',54.30,63.65,6,'page',40,{x0:190,t1:64.30}]];   // тарифы (28.11: стоянка 40, x0 190 — логотип садится с середины ухода, как было); 27.11 Владимир: «механика с логотипом должна остаться, как на индексе» — на уходе тарифов логотип садится (63.65→64.30 за 50 vh), как в обычной
 const SEG=ST?SEG_ST:[ // [прокрутка, vh; часть; t от; t до (время страницы); экран; флаг] — vh и t как в site-full
@@ -411,6 +412,8 @@ const T_INTRO=3.30;   // слоган с телефоном играет сам 
 // перелёт ШАГ №3 → №4: 0..1 внутри сегмента 'm34', вне его −1
 const k34At=u=>{let a=0;for(const s of SEG){if(s[5]==='m34')return u>a&&u<a+s[0]?(u-a)/s[0]:-1;a+=s[0]}return -1};
 const k56At=u=>{let a=0;for(const s of SEG){if(s[5]==='m56')return u>a&&u<a+s[0]?(u-a)/s[0]:-1;a+=s[0]}return -1};
+// 28.11 статика, переезд экрана 'sl' (ШАГ №3 → №4, календарь → график): k 0..1 внутри сегмента, вне — null
+const slAt=u=>{let a=0;for(const s of SEG){if(s[5]==='sl'&&u>a&&u<a+s[0])return {k:(u-a)/s[0],part:s[1],from:s[2],to:s[7].to};a+=s[0]}return null};
 const TOTAL=SEG.reduce((a,s)=>a+s[0],0),INTRO_U=60;
 // подчёркивание на стоянке 'ul': 0 до стоянки, 0→1 за s[6] vh (плавно), дальше 1
 const ulAt=u=>{if(ST)return 1;let a=0;for(const s of SEG){if(s[5]==='ul'){const k=cl((u-a)/s[6]);return k<.5?2*k*k:1-2*(1-k)*(1-k)}a+=s[0]}return 1};
@@ -434,7 +437,7 @@ function feed(t,dt){
  const p0=PH0+jj*PHD,a=Math.max(phc,p0+PHD-PHW),b=p0+PHD-1e-4;
  phJ=PN-1;return a+(b-a)*(t-T_INTRO)/FEEDW}
 // ---------- части
-const PT={H:{f:$('fH'),busy:false,shown:'',on:true},T:{f:$('fT'),busy:false,shown:'',on:false}};
+const PT={H:{f:$('fH'),busy:false,shown:'',on:true,h:true},T:{f:$('fT'),busy:false,shown:'',on:false,h:false}};   // h — часть головы (клону переезда головы — тоже h)
 /* 26.11 статика, слово Владимира: «анимацию оставим только на подчёркивании заголовков; как в мобильной версии».
    Как на мобильной главной: линия под заголовком экрана открывается прокруткой (первые ULX vh стоянки экрана), назад — сворачивается;
    новый экран, открытый из-под блока или въехавший снизу, приходит без линии; заголовок первого экрана рисуется сам при открытии (0,35 с + 0,9 с). */
@@ -442,7 +445,8 @@ let UL0=1e12;const ULX=40,eUL=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
 function ulWant(u){
  let a=0,i=0;for(;i<SEG.length-1&&u>a+SEG[i][0];i++)a+=SEG[i][0];
  const s=SEG[i],x=u-a;let v;
- if(s[5]==='m56')return {H:1,T:0};                                     // стена (с линией) уезжает, календарь въезжает без линии
+ if(s[5]==='sl')return {H:1,T:1};                                      // переезд: уезжающий экран с линией (клон въезжает без линии — slMake)
+ if(s[5]==='m56')return {H:1,T:0};                                   // стена (с линией) уезжает, календарь въезжает без линии
  if(s[5]==='page')v=(x/s[0]<.5||s[2]===s[3])?1:0;                       // под блоком: прежний экран с линией; открывается новый — без линии
  else v=eUL(cl(x/ULX));                                                 // стоянка экрана: линию рисует прокрутка
  if(s[1]==='H'&&(x/s[0]<.5?s[2]:s[3])===SEG[0][2])v=Math.min(v,eUL(cl((performance.now()-UL0-350)/900)));   // первый экран — сам при открытии
@@ -450,7 +454,7 @@ function ulWant(u){
 function ulSet(p,v){if(v==null)v=p.ulw;else p.ulw=v;if(v==null||p.ulc===v)return;p.ulc=v;const d=p.f.contentDocument;if(!d)return;
  const R=p.ulr||(p.ulr=[d,...[...d.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.shadowRoot)]);   // заголовок вступления — в shadow root
  R.forEach(r=>r.querySelectorAll('.acc path').forEach(q=>{const L=parseFloat(q.style.strokeDasharray||getComputedStyle(q).strokeDasharray)||102;q.style.strokeDashoffset=(L*(1-v)).toFixed(2)}));
- const ob=p===PT.H&&d.getElementById('stOb');if(ob)ob.querySelectorAll('rect').forEach((q,i)=>q.style.strokeDashoffset=(1-cl((v-i*.08)/.68)).toFixed(4))}   // 28.11 рамки ШАГ №3 — тем же v
+ const ob=p.h&&d.getElementById('stOb');if(ob)ob.querySelectorAll('rect').forEach((q,i)=>q.style.strokeDashoffset=(1-cl((v-i*.08)/.68)).toFixed(4))}   // 28.11 рамки ШАГ №3 — тем же v
 /* 26.11 Владимир (статика): «имитацию сайта — чтобы на одном экране была верхняя часть с хедером, фоном, логотипом и лицом эксперта… чтобы всё на страницу уложилось».
    Страница сайта (1060×1320) в окне 836 px не прокручивается, а сжата: герой 420→240, карточки 150→96, эксперт 300×360→220×232, подвал 150→90. */
 const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#heroT{top:30px!important}#heroT h1{font-size:42px!important;margin-bottom:12px!important}'
@@ -465,10 +469,10 @@ const ST_SITE='#page{transform:none!important}#hero{height:240px!important}#hero
    Тона блоков — CSS html.st в index.tpl.html. Светлые и тёмные чередуются: соседние экраны отличаются на 13–26 уровней. */
 const TN_H=[[3.30,'#ECEDEF'],[30.55,'#E0E2E6'],[31.45,'#F2F3F5'],[41.70,'#EEEFF1']],   // вступление, ШАГ №3, ШАГ №4, ШАГ №5
  TN_T=[[48.45,'#DDE0E5'],[54.30,'#F6F7F8'],[64.30,'#F0F1F3']];                     // ШАГ №6, график, логотип (время страницы)
-function stTone(p,t){const T=p===PT.H?TN_H:TN_T;let b=T[0];for(const x of T){const v=p===PT.H?x[0]:F(x[0]);if(Math.abs(v-t)<Math.abs((p===PT.H?b[0]:F(b[0]))-t))b=x}
+function stTone(p,t){const T=p.h?TN_H:TN_T;let b=T[0];for(const x of T){const v=p.h?x[0]:F(x[0]);if(Math.abs(v-t)<Math.abs((p.h?b[0]:F(b[0]))-t))b=x}
  const R=p.f.contentDocument&&p.f.contentDocument.documentElement;if(R&&R.style.getPropertyValue('--tn')!==b[1])R.style.setProperty('--tn',b[1])}
 const ST_BG='#bg{display:none!important}#stage{background:var(--tn,#ECEDEF)!important}html:root.m56 #stage{background:var(--tn,#ECEDEF)!important}';
-function stDoc(p){const d=p.f.contentDocument;if(!d||!d.head||d.getElementById('stS'))return;const e=d.createElement('style');e.id='stS';e.textContent=ST_BG+(p===PT.H?ST_SITE:'');d.head.appendChild(e);if(p===PT.H){p.f.contentWindow.__mt0=true;stS3(d)}}
+function stDoc(p){const d=p.f.contentDocument;if(!d||!d.head||d.getElementById('stS'))return;const e=d.createElement('style');e.id='stS';e.textContent=ST_BG+(p.h?ST_SITE:'');d.head.appendChild(e);if(p.h){p.f.contentWindow.__mt0=true;stS3(d)}}
 // 27.11 Владимир: на макете сайта «ввести [обвести] красным, что мы взяли с сайта: фото аватара, логотип и так далее» — ST_SITE: outline у #tLogo, #tBtn (фирменный стиль), #hero (интерьер), #tSvc (услуга), #sMP (эксперт).
 // 27.11 Владимир (статика, ШАГ №3): «переписываем заголовок: Собираем дополнительно материал с вашего сайта; стрелки нужны между тремя блоками слева направо».
 // Разметку заголовка не трогаем (подчёркивание .acc работает как было) — меняем только текст; стрелки — красные кружки по центру зазоров 40 px
@@ -486,11 +490,11 @@ function stObPos(d){const o=d.getElementById('stOb'),sg=d.getElementById('stage'
  o.querySelectorAll('rect').forEach((q,i)=>{const [id,off,r0]=STOB[i],e=d.getElementById(id);if(!e||!e.offsetWidth)return;const b=e.getBoundingClientRect(),k=b.width/sc/e.offsetWidth,
   g=off*k,x=(b.left-S.left)/sc-g,y=(b.top-S.top)/sc-g,w=b.width/sc+2*g,h=b.height/sc+2*g,r=Math.min(w/2,h/2,(id==='hero'?10:Math.max(r0,parseFloat(getComputedStyle(e).borderTopLeftRadius)||0)+7)*k);
   q.setAttribute('x',x.toFixed(1));q.setAttribute('y',y.toFixed(1));q.setAttribute('width',w.toFixed(1));q.setAttribute('height',h.toFixed(1));q.setAttribute('rx',r.toFixed(1));q.style.strokeWidth=(4*k).toFixed(2)})}
-function stS3on(p,t){if(p!==PT.H)return;const a=p.f.contentDocument&&p.f.contentDocument.getElementById('stAr');if(a){const on=Math.abs(t-30.55)<.01;a.style.display=on?'block':'none';if(on)stObPos(p.f.contentDocument)}}
+function stS3on(p,t){if(!p.h)return;const a=p.f.contentDocument&&p.f.contentDocument.getElementById('stAr');if(a){const on=Math.abs(t-30.55)<.01;a.style.display=on?'block':'none';if(on)stObPos(p.f.contentDocument)}}
 function drive(p,t,key,pre){const w=p.f.contentWindow;
  if(t==null){if(p.on){p.on=false;w.__off()}return}
  p.on=true;
- if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;if(ST){stDoc(p);stS3on(p,t);stTone(p,t);p.ulc=null;if(p.ulr&&p.ulr.length<2)p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
+ if(!p.busy&&key!==p.shown){p.busy=true;if(pre)pre(w);w.seek(t).then(()=>{p.shown=key;p.busy=false;p.st=t;if(ST){stDoc(p);stS3on(p,t);stTone(p,t);p.ulc=null;if(p.ulr&&p.ulr.length<2)p.ulr=null;ulSet(p)}},()=>{p.busy=false})}
  w.__sync()}
 let K=1,CY=540,VB=[0,1080],END_D=0;
 /* сцена — как на главной: на всю ширину под шапкой (window.__COVER), на вертикальном экране — вписана */
@@ -759,6 +763,29 @@ function fly56(k){const on=k>=0&&k<1,dH=PT.H.f.contentDocument,dT=PT.T.f.content
   {const ol=tl.querySelector('.ol'),o0=ol?+getComputedStyle(ol).opacity:0;c.children[2].style.opacity=(o0*(1-cl(kk/.25))).toFixed(3);c.children[2].style.borderRadius=R+'px'}
   c.style.display='block';c.style.transform=quadM(C,150,266);c.style.borderRadius=R+'px';c.style.zIndex=24-j;
   c.style.boxShadow=`0 ${(14*(1-e)+26*lift).toFixed(1)}px ${(32*(1-e)+60*lift).toFixed(1)}px rgba(28,32,40,${(.13*(1-e)+.14*lift).toFixed(3)})`})}
+/* 28.11 Владимир (статика): «с ШАГ №3 скачок на следующий — должно быть плавное перемещение, как на следующем экране [ШАГ №5 → №6]» + «тут то же самое» (календарь → график).
+   Сегмент 'sl': часть стоит на своём кадре и уезжает вверх на k·1080 (style.translate — transform чистит fly56), снизу въезжает клон той же части (второй iframe),
+   заранее вставший на кадр следующего экрана (stDoc до первого seek — иначе __mt0 не действует; линия заголовка 0, тон экрана). После переезда клон держит кадр,
+   пока часть не досикнула до него (p.st); назад — часть скрыта, пока не встала на свой кадр. Только под ST. Откат — qa/bak-static3-2026-11-26/loop.pre-slide.js */
+const SL={};
+function slMake(key){const s=SEG.find(x=>x[5]==='sl'&&x[1]===key);if(!s||SL[key])return;
+ const f=document.createElement('iframe');f.title='ролик, переезд экрана';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.visibility='hidden';f.style.willChange='transform';$('wrap').appendChild(f);   // will-change: без своего слоя край клона давал тёмную строку над стыком (замер 28.11, 1900 px)
+ const c=SL[key]={f,h:key==='H',ok:false,vis:false,to:key==='H'?s[7].to:F(s[7].to)};f.srcdoc=key==='H'?PARTS.head:PARTS.tail;
+ (function w(){const x=f.contentWindow,d=f.contentDocument;if(!x||!x.__ready||!d||!d.head)return setTimeout(w,50);
+  stDoc(c);if(!c.h){const st=d.createElement('style');st.textContent='#fanL{visibility:hidden!important}';d.head.appendChild(st)}   // как у главного хвоста (fly56, s56)
+  if(c.h){x.__phT=null;x.__phJ=null;x.__mUL=1;x.__k34=-1}x.__vb=VB;
+  x.seek(c.to).then(()=>{stS3on(c,c.to);stTone(c,c.to);c.ulc=null;ulSet(c,0);x.__off();c.ok=true},()=>{})})()}
+const eqT=(a,b)=>a!=null&&b!=null&&Math.abs(a-b)<1e-6;
+/* сдвиг клона — до целого пикселя экрана, уезжающий — встык под ним с нахлёстом 6 px (глаз Opus 28.11: два дробных края давали на стыке тёмную линию 1–2 px) */
+function slTy(k){const d=devicePixelRatio||1,wt=CY-540*K;return (Math.round((wt+(1-k)*1080*K)*d)/d-wt+.004/d)/K}
+function slide(sl,s){const ty=sl?slTy(sl.k):0;for(const key of ['H','T']){const c=SL[key],m=PT[key],on=!!sl&&sl.part===key;
+  const my=on?`0 ${(ty-1080+6/K*Math.min(1,sl.k*20,(1-sl.k)*20)).toFixed(3)}px`:'';if(m.f.style.translate!==my)m.f.style.translate=my;
+  if(on&&(m.busy||!eqT(m.st,m.h?sl.from:F(sl.from))))m.f.style.visibility='hidden';   // назад: часть ещё не встала на свой кадр
+  if(!c||!c.ok)continue;
+  const hold=!on&&eqT(key==='H'?s.h:s.t,c.to)&&(m.busy||!eqT(m.st,c.to)),vis=on||hold;   // после переезда: клон стоит, пока часть не досикнула
+  const tc=on?`translateY(${ty.toFixed(3)}px)`:'';if(c.f.style.transform!==tc)c.f.style.transform=tc;
+  if(vis!==c.vis){c.vis=vis;c.f.style.visibility=vis?'visible':'hidden';if(!vis)c.f.contentWindow.__off()}
+  if(vis)c.f.contentWindow.__sync()}}
 // низ сносок сравнения (cb) и верх надписи «Тарифы» (ct) — от верха своих секций; кэш на размер окна
 let CMG=null;function cmGap(){const k=innerWidth+'x'+innerHeight;if(CMG&&CMG.k===k)return CMG;
  const r=(s,e)=>e.getBoundingClientRect().top-s.getBoundingClientRect().top,f=CMP.sec.querySelector('.cmF'),pk=PRP.sec.querySelector('.prK'),d=PRP.sec.style.display;
@@ -832,6 +859,7 @@ function frame(now){
  drive(PT.T,s.t,s.t+'|'+VB,w=>{w.__vb=VB});
  if(ST){const w=ulWant(cur);ulSet(PT.H,+w.H.toFixed(4));ulSet(PT.T,+w.T.toFixed(4))}
  fly56(k5);
+ if(ST)slide(slAt(cur),s);
  window.__st=s;
  /* кнопка «Задайте нам вопрос» проявляется вместе с логотипом: как только уезжающий блок тарифов открывает её место
     (16.11, Владимир: «пилюля появляется только вместе с футером — пусть сразу с логотипом»; было — по времени хвоста 21,25–21,55) */
@@ -858,7 +886,8 @@ PT.H.f.srcdoc=PARTS.head;PT.T.f.srcdoc=PARTS.tail;
  if(h&&t&&h.__ready&&t.__ready){
   wsBuild().then(()=>{bfBuild();vdBuild();if(CM_ON)cmBuild();prBuild();
    h.seek(T_INTRO-.001);t.seek(F(46));   // прогрев: хвост скрыт, но его первые видео уже создаются и грузятся
-   scrollTo(0,0);window.__site=true;UL0=performance.now();requestAnimationFrame(frame)})}else setTimeout(wait,30)})();
+   scrollTo(0,0);window.__site=true;UL0=performance.now();requestAnimationFrame(frame);
+   if(ST){setTimeout(()=>slMake('H'),1000);setTimeout(()=>slMake('T'),2500)}})}else setTimeout(wait,30)})();   // 28.11 клоны переезда — после загрузки, не мешают первому экрану
 // ---------- (копия из site-main) попап «Задайте нам вопрос»: имя, телефон, комментарий. Отправки пока нет — показываем «спасибо»
 (function ask(){const M=$('ask'),F=$('askF'),OK=M.querySelector('.ok'),I=F.elements;let back=null;
  const open=e=>{e&&e.preventDefault();back=document.activeElement;F.hidden=false;OK.hidden=true;F.reset();
