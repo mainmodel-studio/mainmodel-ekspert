@@ -91,6 +91,29 @@
     #note { left: 5vw; bottom: auto; top: 64px; font-size: 10px; background: rgba(34,37,34,.6); padding: 5px 8px 4px; text-shadow: none; }
     .scrim { background: radial-gradient(170% 75% at 0% 0%, rgba(240,238,230,.95) 0%, rgba(240,238,230,.86) 45%, rgba(240,238,230,0) 78%); }
   }
+
+/* фаза 29: субтитры речи менеджера — манера u03 «Редакционные титры» (картотека, шоурил U): строка капсом на белой полосе открывается слева направо, ключевое слово — курсив на цветной полосе, поднимается из маски */
+@font-face{font-family:Geo;font-weight:100 900;src:url(fonts/geologica-cyrillic.woff2) format("woff2");unicode-range:U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:Geo;font-weight:100 900;src:url(fonts/geologica-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+2191,U+2193,U+2212}
+@font-face{font-family:PFi;font-style:italic;font-weight:400 900;src:url(fonts/playfair-italic-cyrillic.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:PFi;font-style:italic;font-weight:400 900;src:url(fonts/playfair-italic-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+2000-206F,U+2191,U+2193,U+2212}
+#subs { position: absolute; left: 50%; bottom: 15vh; transform: translateX(-50%); z-index: 5; transition: opacity .25s; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+#subs .st { background: #fff; padding: 11px 18px 10px 22px; font: 700 24px/1 Geo, sans-serif; letter-spacing: .24em; color: #0B1F3D; white-space: nowrap; box-shadow: 0 6px 18px rgba(11,31,61,.22); clip-path: inset(0 100% 0 0); }
+#subs .kw { margin: -2px 0 0 110px; background: var(--or); padding: 0 22px 9px 18px; white-space: nowrap; clip-path: inset(0 100% 0 0); box-shadow: 0 6px 18px rgba(11,31,61,.18); }
+#subs .kw span { display: inline-block; font: italic 600 54px/1.08 PFi, serif; color: #fff; }
+#subs.nok .kw { visibility: hidden; }
+#subs .ar { font: 700 1em system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; font-style: normal; letter-spacing: 0; }
+@keyframes subOpen { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes subRise { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+#subs.in .st { animation: subOpen .38s cubic-bezier(.45,0,.55,1) both; }
+#subs.k .kw { animation: subOpen .34s cubic-bezier(.45,0,.55,1) both; }
+#subs.k .kw span { animation: subRise .36s .05s cubic-bezier(.2,.7,.3,1) both; }
+@media (max-width: 760px) {
+  #subs { bottom: 14vh; }
+  #subs .st { font-size: 17px; letter-spacing: .14em; padding: 9px 12px 8px 14px; }
+  #subs .kw { margin-left: 56px; padding: 0 14px 6px 12px; }
+  #subs .kw span { font-size: 34px; }
+}
 </style>
 </head>
 <body>
@@ -139,6 +162,7 @@
     <div id="hint">ЛИСТАЙТЕ ↓</div>
     <div id="note">ПРОБА · ЖК И ЦИФРЫ ВЫДУМАНЫ</div>
     <button id="cta" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
+    <div id="subs" aria-hidden="true"><div class="st"></div><div class="kw"><span></span></div></div>
     <button id="snd" type="button">ВКЛЮЧИТЬ ЗВУК</button>
     <button id="cont" type="button">ПРОДОЛЖИТЬ ОСМОТР ЖК ↓</button>
     <button id="cta4" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
@@ -350,7 +374,7 @@ function placeCta() {
 // talk: 'idle' (камера ещё летит) → 'talk' (камера встала у арки — видео стартует само, холст пуст) → 'end' (после «Запишитесь ниже»: полоса с записью; кадр стоит)
 // Звук: браузер пускает его только после жеста (клик, тап, клавиша; прокрутка не считается). Не пустил → играем без звука + плашка #snd; любой жест включает.
 // Досмотрел и вернулся к арке → сразу 'end' (без повтора); ушёл посреди речи → при возврате с начала.
-const talk = $('#talk'), snd = $('#snd'), TALK = MOBILE ? 'talk-m.mp4' : 'talk.mp4', TALK_END = 9.6;
+const talk = $('#talk'), snd = $('#snd'), TALK = MOBILE ? 'talk-m.mp4' : 'talk.mp4', TALK_END = 9.95;   // фаза 29: после «ниже» (слово кончается 9.92) — субтитр успевает погаснуть до плашки
 let talkMode = 'idle', talkHere = false, talkDone = false, sndAsk = false, endT0 = 0, primed = false;
 function talkStop() { if (talkMode === 'idle') return; talk.pause(); talkMode = 'idle'; sndAsk = false; talk.style.visibility = 'hidden'; kick(); }
 function talkEnd() { if (talkMode !== 'talk') return; talkMode = 'end'; talkDone = true; sndAsk = false; endT0 = performance.now(); kick(); }
@@ -376,6 +400,32 @@ for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, un
 snd.addEventListener('click', unmute);
 talk.addEventListener('timeupdate', () => { if (talk.currentTime >= TALK_END) talkEnd(); });
 talk.addEventListener('ended', talkEnd);
+// фаза 29: субтитры речи (тайминги слов — whisper по talk-audio.wav, тот же звук, что в talk.mp4 / talk-m.mp4); k — ключевое слово, kt — его начало
+const SUBS = [
+  { a: 0.00, b: 1.04, s: 'ЗДРАВСТВУЙТЕ!' },
+  { a: 1.12, b: 3.18, s: 'Я АННА, МЕНЕДЖЕР ЖК', k: '«Линия»', kt: 2.50 },
+  { a: 3.18, b: 5.40, s: 'КВАРТИРУ 9.04 ВЫ УЖЕ', k: 'видели', kt: 4.82 },
+  { a: 5.48, b: 7.50, s: 'ДАВАЙТЕ ПОКАЖУ ЕЁ', k: 'вживую', kt: 6.58 },
+  { a: 7.58, b: 8.98, s: 'ПРОСМОТР —', k: '30 минут', kt: 8.12 },
+  { a: 9.06, b: 10.1, s: 'ЗАПИШИТЕСЬ НИЖЕ ↓' },   // без курсива: в 'end' сразу гаснет, место — финальной плашке
+];
+const subs = $('#subs'), subSt = $('#subs .st'), subKw = $('#subs .kw span');
+let subI = -1;   // без ключевого слова полоса курсива держит место скрытой (заглушка 'ниже') — белая строка не прыгает по высоте
+function subsTick() {
+  requestAnimationFrame(subsTick);
+  const t = talk.currentTime, live = talkMode !== 'idle' && talk.style.visibility === 'visible';
+  const i = live ? SUBS.findIndex(c => t >= c.a - .08 && t < c.b) : -1;
+  if (i !== subI) {
+    subI = i; subs.classList.remove('in', 'k');
+    if (i >= 0) { const c = SUBS[i]; subSt.innerHTML = c.s.replace('↓', '<i class="ar">↓</i>'); subKw.textContent = c.k || 'ниже'; subs.classList.toggle('nok', !c.k); void subs.offsetWidth; subs.classList.add('in'); }
+  }
+  if (i >= 0 && SUBS[i].k) subs.classList.toggle('k', t >= SUBS[i].kt - .05);
+  subs.style.visibility = i >= 0 ? 'visible' : 'hidden';
+  subs.style.opacity = talkMode === 'end' || t >= 9.9 ? 0 : (talk.style.opacity || 1);   // слова кончились — гаснет за .25 с, плашка финала — после TALK_END   // слова кончились — гаснет за .25 с до финальной плашки
+}
+requestAnimationFrame(subsTick);
+window.__subs = () => ({ i: subI, t: +talk.currentTime.toFixed(2), txt: subI >= 0 ? subSt.textContent + ' / ' + subKw.textContent : '' });
+
 function resize() {
   dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
