@@ -276,7 +276,8 @@ html,body{margin:0;background:#ECEDEF}
 @keyframes hintO{to{opacity:1}}
 @keyframes hintB{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.08)}}
 @media (prefers-reduced-motion:reduce){#hint svg{animation:none}#hint path{animation:none;stroke-dashoffset:0;opacity:1}}
-#tc{position:fixed;left:20px;bottom:18px;font:500 13px -apple-system,'Helvetica Neue',Arial,sans-serif;color:#9A9A9A;font-variant-numeric:tabular-nums;z-index:9}
+/* 28.11 Владимир «норм делай»: служебный таймкод скрыт на всех ширинах */
+#tc{display:none!important;position:fixed;left:20px;bottom:18px;font:500 13px -apple-system,'Helvetica Neue',Arial,sans-serif;color:#9A9A9A;font-variant-numeric:tabular-nums;z-index:9}
 /* 26.11 статика (html.st, loop.js ST): CSS-анимации и переходы — сразу в конечном состоянии */
 /* 26.11 статика: у каждого блока свой тон серого, пятен нет, края — чёткий срез по середине прежней растушёвки (90 px) */
 html.st .bgc{display:none!important}
