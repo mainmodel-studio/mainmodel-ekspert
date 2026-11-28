@@ -14,10 +14,11 @@
   html, body { background: #1a1c1a; color: var(--gr); }
   body { font-family: var(--mono); -webkit-font-smoothing: antialiased; }
   html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
-  #scroller { height: 660vh; position: relative; }
+  #scroller { height: 1200vh; position: relative; }
   #stage { position: sticky; top: 0; height: 100vh; height: 100dvh; width: 100%; overflow: hidden; }
-  #vid, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #vid, #poster img { object-fit: cover; }
+  #vid, #vid2, #seq, #atom, #poster, #poster img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vid, #vid2, #poster img { object-fit: cover; }
+  #vid2 { visibility: hidden; }
   #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
     background: radial-gradient(70% 70% at 50% 48%, #FFFEFA 0%, #FFF4DF 38%, #F8E1BD 75%, #EFCFA2 100%); }
 
@@ -54,6 +55,8 @@
   #cta.on { pointer-events: auto; }
   #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; font-size: 12px; letter-spacing: .2em; color: var(--por);
     background: rgba(34,37,34,.8); padding: 14px 22px; transition: opacity .3s; }
+  #load2 { position: absolute; right: 4vw; bottom: 3vh; z-index: 9; font-size: 11px; letter-spacing: .2em; color: var(--por);
+    background: rgba(34,37,34,.8); padding: 8px 14px; opacity: 0; transition: opacity .3s; }
   /* телефон / узкий экран: лёгкая вертикальная последовательность кадров (frames-m/, вместо видео — iOS медленно перематывает) и раскладка атома */
   @media (max-aspect-ratio: 4/5), (max-width: 699px) {
     #bar { padding: 16px 5vw 28px; font-size: 10px; letter-spacing: .1em; }
@@ -73,6 +76,7 @@
 <div id="scroller">
   <div id="stage">
     <video id="vid" muted playsinline preload="auto"></video>
+    <video id="vid2" muted playsinline preload="auto"></video>
     <canvas id="seq"></canvas>
     <picture id="poster"><source media="(max-aspect-ratio: 4/5), (max-width: 699px)" srcset="poster-m.jpg"><img src="poster.jpg" alt=""></picture>
     <div id="flash"></div>
@@ -93,42 +97,54 @@
       <div class="ln acc"><span>В ОКНО.</span></div>
     </div>
 
+    <div class="hd" id="h3" data-seg="2" data-from="0.012" data-to="0.30">
+      <div class="cap">ПОВОРОТ НАПРАВО · КУХНЯ</div>
+      <div class="ln"><span>СЕРДЦЕ</span></div>
+      <div class="ln"><span>ДОМА —</span></div>
+      <div class="ln acc"><span>НАПРАВО.</span></div>
+    </div>
+
     <div id="dist">ДО ОКНА<span class="n">240<i>М</i></span></div>
     <div id="hint">ЛИСТАЙТЕ ↓</div>
     <div id="note">ПРОБА · ЖК И ЦИФРЫ ВЫДУМАНЫ</div>
     <button id="cta" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
     <div id="load">ЗАГРУЗКА 0%</div>
+    <div id="load2">КУХНЯ 0%</div>
   </div>
 </div>
 
 <script type="module">
-import { drawAtom, ctaRect, setMobile, T_END, W, H } from './atom.js?v=8';
+import { drawAtom, drawAtom2, drawTurn, ctaRect, setMobile, T_END, T2_END, W, H } from './atom.js?v=10';
 const MOBILE = matchMedia('(max-aspect-ratio: 4/5), (max-width: 699px)').matches; // выбор один раз при загрузке: видео и раскладка атома
 if (MOBILE) setMobile();
-const VIDEO = 'flight.mp4'; // компьютер: видео 1920, скраб перемоткой
-// телефон: Safari медленно перематывает видео (лаг на iPhone 15) — вместо видео 121 кадр WebP 640×1072 (2,2 МБ) на холсте
+const VIDEO = 'flight.mp4', VIDEO2 = 'kitchen.mp4'; // компьютер: видео 1920, скраб перемоткой, все кадры ключевые
+// телефон: Safari медленно перематывает видео (лаг на iPhone 15) — вместо видео кадры WebP 640×1072 на холсте
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const sm = p => { p = clamp(p); return p * p * (3 - 2 * p); };
 const eo = p => { p = clamp(p); return 1 - Math.pow(1 - p, 3); };
 const $ = s => document.querySelector(s);
 
-const vid = $('#vid'), poster = $('#poster'), flash = $('#flash'), cv = $('#atom'), ctx = cv.getContext('2d'),
+const vid = $('#vid'), vid2 = $('#vid2'), poster = $('#poster'), flash = $('#flash'), cv = $('#atom'), ctx = cv.getContext('2d'),
       distEl = $('#dist'), distN = $('#dist .n'), hint = $('#hint'), cta = $('#cta'), prog = $('#progress'),
-      bar = $('#bar'), note = $('#note'), scrim = $('#scrim'), load = $('#load');
-const heads = [...document.querySelectorAll('.hd')].map(el => ({
+      bar = $('#bar'), note = $('#note'), scrim = $('#scrim'), load = $('#load'), load2 = $('#load2');
+const heads = [...document.querySelectorAll('.hd')].map(el => ({ seg: +(el.dataset.seg || 1),
   el, from: +el.dataset.from, to: +el.dataset.to, cap: el.querySelector('.cap'), spans: [...el.querySelectorAll('.ln span')] }));
 
-const V_END = .55;            // видео занимает прокрутку 0 … .55, дальше держит последний кадр
-const ATOM_A = .47, ATOM_B = .96; // атом стартует на влёте (стык 4,3–4,7 с закрыт вспышкой) и живёт до конца
-let dur = 5.04, k = 1, ox = 0, oy = 0, dpr = 1, vis = { x0: 0, y0: 0, x1: W, y1: H };
+// ── две части прокрутки: 1 — пролёт в гостиную + атом гостиной (прежние 660vh), 2 — поворот на кухню + атом кухни ──
+const SEG1 = 660 / 1200;          // часть 1 в прежних координатах p1 = p / SEG1
+const P2_0 = SEG1 * .97;          // часть 2 стартует, когда атом гостиной ушёл (p1 = .97)
+const V_END = .55;                // часть 1: видео на p1 0 … .55, дальше держит последний кадр
+const ATOM_A = .47, ATOM_B = .96; // часть 1: атом стартует на влёте (стык 4,3–4,7 с закрыт вспышкой)
+const V2_END = .40, ATOM2_A = .33, ATOM2_B = .97; // часть 2 (q): видео поворота, атом кухни с конца поворота
+let dur = 5.04, dur2 = 5.04, k = 1, ox = 0, oy = 0, dpr = 1, vis = { x0: 0, y0: 0, x1: W, y1: H };
 
 // ── карта прокрутка → время видео. Kling разгоняет камеру неравномерно (пик +3…4 %/кадр на 85→51 м,
 // толчок на кадре 79→80), поэтому линейная связь давала ступеньки. До влёта (p 0…ATOM_A ↔ 0…4,31 с)
 // время идёт по накопленному приближению кадров (ORB-замер, вес = zoom% + 0,6, медиана по 3 кадрам — держит толчок 79→80 без всплеска);
-// после ATOM_A — линейно, чтобы вспышка, атом и CTA остались на своих местах.
+// после ATOM_A — линейно, чтобы вспышка и атом остались на своих местах.
 const T_IN = 4.31;
-const LUT = [0.0, 0.0029, 0.00589, 0.00893, 0.01206, 0.01529, 0.01857, 0.0219, 0.02527, 0.02883, 0.03258, 0.03638, 0.04018, 0.04403, 0.04788, 0.05196, 0.05633, 0.0607, 0.06512, 0.06968, 0.07433, 0.07899, 0.08364, 0.08835, 0.0931, 0.09789, 0.10302, 0.10787, 0.11281, 0.11775, 0.12297, 0.12829, 0.13352, 0.13874, 0.14397, 0.14952, 0.15532, 0.16111, 0.16715, 0.17403, 0.18177, 0.19028, 0.19892, 0.20776, 0.21673, 0.2259, 0.23531, 0.24495, 0.25473, 0.2648, 0.27501, 0.28561, 0.29648, 0.30745, 0.31914, 0.3312, 0.34379, 0.35642, 0.36987, 0.38378, 0.39775, 0.41219, 0.4272, 0.44273, 0.45826, 0.47412, 0.49113, 0.50875, 0.5269, 0.54547, 0.56442, 0.58361, 0.60337, 0.62313, 0.6436, 0.66435, 0.68511, 0.70397, 0.72282, 0.74168, 0.75436, 0.76619, 0.77802, 0.79046, 0.80291, 0.81454, 0.82585, 0.83739, 0.84893, 0.86071, 0.87249, 0.88351, 0.89415, 0.90474, 0.91448, 0.92384, 0.93357, 0.94326, 0.95295, 0.96179, 0.97038, 0.97893, 0.98748, 0.99618, 1.0];  // доля пути до влёта на кадре i (i/24 с), последний — T_IN
+const LUT = [0.0, 0.0029, 0.00589, 0.00893, 0.01206, 0.01529, 0.01857, 0.0219, 0.02527, 0.02883, 0.03258, 0.03638, 0.04018, 0.04403, 0.04788, 0.05196, 0.05633, 0.0607, 0.06512, 0.06968, 0.07433, 0.07899, 0.08364, 0.08835, 0.0931, 0.09789, 0.10302, 0.10787, 0.11281, 0.11775, 0.12297, 0.12829, 0.13352, 0.13874, 0.14397, 0.14952, 0.15532, 0.16111, 0.16715, 0.17403, 0.18177, 0.19028, 0.19892, 0.20776, 0.21673, 0.2259, 0.23531, 0.24495, 0.25473, 0.2648, 0.27501, 0.28561, 0.29648, 0.30745, 0.31914, 0.3312, 0.34379, 0.35642, 0.36987, 0.38378, 0.39775, 0.41219, 0.4272, 0.44273, 0.45826, 0.47412, 0.49113, 0.50875, 0.5269, 0.54547, 0.56442, 0.58361, 0.60337, 0.62313, 0.6436, 0.66435, 0.68511, 0.70397, 0.72282, 0.74168, 0.75436, 0.76619, 0.77802, 0.79046, 0.80291, 0.81454, 0.82585, 0.83739, 0.84893, 0.86071, 0.87249, 0.88351, 0.89415, 0.90474, 0.91448, 0.92384, 0.93357, 0.94326, 0.95295, 0.96179, 0.97038, 0.97893, 0.98748, 0.99618, 1.0];
 function videoTime(p) {
   if (p >= ATOM_A) return Math.min(dur, T_IN + (dur - T_IN) * clamp((p - ATOM_A) / (V_END - ATOM_A)));
   const q = clamp(p / ATOM_A); let lo = 0, hi = LUT.length - 1;
@@ -136,44 +152,75 @@ function videoTime(p) {
   const tl = lo / 24, th = hi === LUT.length - 1 ? T_IN : hi / 24;
   return tl + (th - tl) * ((q - LUT[lo]) / ((LUT[hi] - LUT[lo]) || 1));
 }
+// поворот: камера стоит на краях и разгоняется до ×9 в середине (оптический поток по кадрам) —
+// вес кадра = поток + 1,5: середина растянута по прокрутке, мягкий разгон и торможение сохранены
+const LUT2 = [0.0000, 0.0027, 0.0066, 0.0105, 0.0143, 0.0181, 0.0219, 0.0260, 0.0300, 0.0343, 0.0388, 0.0436, 0.0486, 0.0537, 0.0588, 0.0641, 0.0697, 0.0755, 0.0816, 0.0881, 0.0949, 0.1021, 0.1099, 0.1180, 0.1266, 0.1355, 0.1450, 0.1549, 0.1653, 0.1762, 0.1872, 0.1982, 0.2096, 0.2216, 0.2339, 0.2464, 0.2593, 0.2726, 0.2863, 0.2997, 0.3132, 0.3268, 0.3409, 0.3549, 0.3691, 0.3835, 0.3979, 0.4120, 0.4264, 0.4409, 0.4552, 0.4693, 0.4836, 0.4979, 0.5129, 0.5285, 0.5436, 0.5587, 0.5735, 0.5881, 0.6025, 0.6164, 0.6306, 0.6444, 0.6576, 0.6705, 0.6828, 0.6946, 0.7061, 0.7168, 0.7262, 0.7346, 0.7429, 0.7512, 0.7600, 0.7686, 0.7774, 0.7860, 0.7946, 0.8032, 0.8121, 0.8204, 0.8282, 0.8354, 0.8420, 0.8484, 0.8547, 0.8608, 0.8668, 0.8728, 0.8785, 0.8841, 0.8893, 0.8947, 0.8999, 0.9050, 0.9101, 0.9152, 0.9202, 0.9252, 0.9300, 0.9346, 0.9392, 0.9436, 0.9479, 0.9520, 0.9559, 0.9596, 0.9633, 0.9668, 0.9702, 0.9736, 0.9769, 0.9802, 0.9833, 0.9863, 0.9892, 0.9920, 0.9947, 0.9974, 1.0000];
+121
+function videoTime2(q) {
+  const u = clamp(q / V2_END); let lo = 0, hi = LUT2.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (LUT2[m] <= u) lo = m; else hi = m; }
+  return Math.min(dur2 - .001, (lo + (u - LUT2[lo]) / ((LUT2[hi] - LUT2[lo]) || 1)) / 24);
+}
 
 // ── видео: грузим целиком в blob, чтобы скраб не ждал сеть ──
-async function loadVideo() {
+async function fetchBlob(url, onPct) {
   try {
-    const r = await fetch(VIDEO);
+    const r = await fetch(url);
     const total = +r.headers.get('content-length') || 0, rd = r.body.getReader(), parts = []; let got = 0;
     for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length;
-      if (total) load.textContent = 'ЗАГРУЗКА ' + Math.round(got / total * 100) + '%'; }
-    vid.src = URL.createObjectURL(new Blob(parts, { type: 'video/mp4' }));
-  } catch (e) { vid.src = VIDEO; }
-  vid.play().then(() => { vid.pause(); seek(want); }).catch(() => {}); // iOS Safari: без play() может не отдать первый кадр
-  await new Promise(res => vid.readyState >= 2 ? res() : vid.addEventListener('loadeddata', res, { once: true }));
+      if (total) onPct(Math.round(got / total * 100)); }
+    return URL.createObjectURL(new Blob(parts, { type: 'video/mp4' }));
+  } catch (e) { return url; }
+}
+const ready = v => new Promise(res => v.readyState >= 2 ? res() : v.addEventListener('loadeddata', res, { once: true }));
+async function loadVideo() {
+  vid.src = await fetchBlob(VIDEO, n => load.textContent = 'ЗАГРУЗКА ' + n + '%');
+  vid.play().then(() => { vid.pause(); s1.go(s1.want); }).catch(() => {}); // iOS Safari: без play() может не отдать первый кадр
+  await ready(vid);
   dur = vid.duration || dur; load.remove(); poster.remove(); // сразу, без затухания: ни след «ЗАГРУЗКИ», ни постер (кадр фасада) не должны двоиться с текущим кадром
+}
+let ready2 = false;
+async function loadVideo2() { // часть 2 грузится фоном, пока смотрят гостиную
+  vid2.src = await fetchBlob(VIDEO2, n => load2.textContent = 'КУХНЯ ' + n + '%');
+  vid2.play().then(() => { vid2.pause(); s2.go(s2.want); }).catch(() => {});
+  await ready(vid2); dur2 = vid2.duration || dur2; ready2 = true; window.__ready2 = true; render(cur);
 }
 
 // ── телефон: кадры-картинки на холсте, между соседними кадрами — смешивание ──
-const NF = 121, FR = 24, frames = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
-let lastF = -1;
-async function loadFrames() {
+const NF = 121, FR = 24, frames1 = [], frames2 = [], seqCv = $('#seq'), sctx = seqCv.getContext('2d');
+let lastKey = '';
+function loadSet(dir, arr, onPct) {
   let got = 0, next = 0;
-  const one = i => new Promise(res => { const im = new Image(); frames[i] = im;
-    im.onload = im.onerror = () => { got++; load.textContent = 'ЗАГРУЗКА ' + Math.round(got / NF * 100) + '%'; res(); };
-    im.src = 'frames-m/' + String(i).padStart(3, '0') + '.webp'; });
-  await Promise.all(Array.from({ length: 6 }, async () => { while (next < NF) await one(next++); }));
-  dur = NF / FR; vid.remove(); load.remove(); poster.remove();
+  const one = i => new Promise(res => { const im = new Image(); arr[i] = im;
+    im.onload = im.onerror = () => { got++; onPct(Math.round(got / NF * 100)); res(); };
+    im.src = dir + '/' + String(i).padStart(3, '0') + '.webp'; });
+  return Promise.all(Array.from({ length: 6 }, async () => { while (next < NF) await one(next++); }));
 }
-function drawSeq(vt) {
-  const f = clamp(vt * FR, 0, NF - 1); if (Math.abs(f - lastF) < .01) return; lastF = f;
-  const i = Math.floor(f), a = f - i;
+async function loadFrames() {
+  await loadSet('frames-m', frames1, n => load.textContent = 'ЗАГРУЗКА ' + n + '%');
+  dur = NF / FR; vid.remove(); vid2.remove(); load.remove(); poster.remove();
+}
+async function loadFrames2() {
+  await loadSet('frames-m2', frames2, n => load2.textContent = 'КУХНЯ ' + n + '%');
+  dur2 = NF / FR; ready2 = true; window.__ready2 = true; lastKey = ''; render(cur);
+}
+function drawSeq(set, id, vt) {
+  const f = clamp(vt * FR, 0, NF - 1), key = id + ':' + f.toFixed(2); if (key === lastKey) return; lastKey = key;
+  const i = id === 1 ? Math.floor(f) : Math.round(f), a = f - i;
   sctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
-  sctx.globalAlpha = 1; if (frames[i]?.complete) sctx.drawImage(frames[i], 0, 0, W, H);
-  if (a > .03 && frames[i + 1]?.complete) { sctx.globalAlpha = a; sctx.drawImage(frames[i + 1], 0, 0, W, H); }
+  sctx.globalAlpha = 1; if (set[i]?.complete) sctx.drawImage(set[i], 0, 0, W, H);
+  // поворот на кухню быстрый: смешивание дало бы двойной контур — там ближайший кадр
+  if (id === 1 && a > .03 && set[i + 1]?.complete) { sctx.globalAlpha = a; sctx.drawImage(set[i + 1], 0, 0, W, H); }
 }
 
 // ── скраб: одна перемотка за раз, последняя цель не теряется ──
-let want = 0, seeking = false;
-function seek(t) { want = t; if (!seeking && vid.readyState >= 1 && Math.abs(vid.currentTime - t) > .02) { seeking = true; vid.currentTime = t; } }
-vid.addEventListener('seeked', () => { seeking = false; if (Math.abs(vid.currentTime - want) > .02) seek(want); });
+function seeker(v) {
+  const s = { want: 0, busy: false };
+  s.go = t => { s.want = t; if (!s.busy && v.readyState >= 1 && Math.abs(v.currentTime - t) > .02) { s.busy = true; v.currentTime = t; } };
+  v.addEventListener('seeked', () => { s.busy = false; if (Math.abs(v.currentTime - s.want) > .02) s.go(s.want); });
+  return s;
+}
+const s1 = seeker(vid), s2 = seeker(vid2);
 
 function placeCta() {
   const r = ctaRect(vis);
@@ -182,7 +229,7 @@ function placeCta() {
 function resize() {
   dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
-  if (MOBILE) { seqCv.width = cv.width; seqCv.height = cv.height; lastF = -1; }
+  if (MOBILE) { seqCv.width = cv.width; seqCv.height = cv.height; lastKey = ''; }
   k = Math.max(innerWidth / W, innerHeight / H); ox = (innerWidth - W * k) / 2; oy = (innerHeight - H * k) / 2;
   vis = { x0: -ox / k, y0: -oy / k, x1: W + ox / k, y1: H + oy / k };
   placeCta(); render(cur, true);
@@ -190,34 +237,44 @@ function resize() {
 addEventListener('resize', resize);
 
 function render(p) {
-  const vt = videoTime(p);
-  if (MOBILE) drawSeq(vt); else seek(vt - (p >= V_END ? .001 : 0));
+  const p1 = p / SEG1, q = (p - P2_0) / (1 - P2_0), inB = q > 0, showB = inB && ready2;
+  const vt = videoTime(Math.min(p1, 1)), vt2 = videoTime2(q);
+  if (MOBILE) { if (showB) drawSeq(frames2, 2, vt2); else drawSeq(frames1, 1, vt); }
+  else {
+    vid2.style.visibility = showB ? 'visible' : 'hidden';
+    if (showB) s2.go(vt2); else s1.go(vt - (p1 >= V_END ? .001 : 0));
+  }
+  load2.style.opacity = inB && !ready2 ? 1 : 0; // долистали до кухни раньше, чем она загрузилась
   // вспышка влёта: свет из окна закрывает стык 4,3–4,7 с (импост и картина) — по реальному времени видео
   flash.style.opacity = (clamp((1 - Math.abs(vt - 4.54) / .38) * 1.6) ** .7 * .94).toFixed(3); // плато 4,40–4,68 с
 
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-  const ta = T_END * clamp((p - ATOM_A) / (ATOM_B - ATOM_A));
-  if (p > ATOM_A) { ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy); drawAtom(ctx, ta, vis); }
+  const ta = T_END * clamp((p1 - ATOM_A) / (ATOM_B - ATOM_A)), ta2 = T2_END * clamp((q - ATOM2_A) / (ATOM2_B - ATOM2_A));
+  ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
+  if (p1 > ATOM_A && !inB) drawAtom(ctx, ta, vis);
+  if (showB) drawTurn(ctx, vt2, vis);
+  if (q > ATOM2_A) drawAtom2(ctx, ta2, vis);
 
-  const vis2 = h => sm((p - h.from) / .03) * (1 - sm((p - h.to + .06) / .03));
+  const loc = h => h.seg === 2 ? q : p1;
+  const vis2 = h => sm((loc(h) - h.from) / .03) * (1 - sm((loc(h) - h.to + .06) / .03));
   scrim.style.opacity = Math.max(...heads.map(vis2));
   for (const h of heads) {
-    const span = h.to - h.from;
-    h.cap.style.opacity = vis2(h);
+    const span = h.to - h.from, x = loc(h);
+    h.cap.style.opacity = h.seg === 2 ? vis2(h) * (1 - sm((x - h.to + .085) / .02)) : vis2(h); // подпись поворота гаснет до ухода строк
     h.spans.forEach((s, j) => {
-      const a = eo((p - h.from - j * .012) / (span * .35));
-      const e = eo((p - h.to + .045 - j * .008) / .045);
+      const a = eo((x - h.from - j * .012) / (span * .35));
+      const e = eo((x - h.to + .045 - j * .008) / .045);
       s.style.transform = `translateY(${((1 - a) * 110 - e * 150).toFixed(2)}%)`;
       s.style.opacity = (1 - sm(e * 2.6)).toFixed(3); // уходящая строка гаснет быстро — без следа на фасаде
     });
   }
-  const d = Math.round(240 * (1 - clamp(p / .46)));
+  const d = Math.round(240 * (1 - clamp(p1 / .46)));
   distN.firstChild.nodeValue = String(d).padStart(3, '0');
-  distEl.style.opacity = 1 - sm((p - .40) / .05);
-  bar.style.opacity = 1 - sm((p - .44) / .04);           // внутри бренд несёт метка атома
-  note.style.opacity = (MOBILE ? 1 : .7) * (1 - sm((p - .44) / .04));
-  hint.style.opacity = 1 - sm(p / .03);
-  const c = sm((ta - 8.15) / .4);
+  distEl.style.opacity = 1 - sm((p1 - .40) / .05);
+  bar.style.opacity = 1 - sm((p1 - .44) / .04);           // внутри бренд несёт метка атома
+  note.style.opacity = (MOBILE ? 1 : .7) * (1 - sm((p1 - .44) / .04));
+  hint.style.opacity = 1 - sm(p1 / .03);
+  const c = sm((ta2 - 8.15) / .4);
   cta.style.opacity = c; cta.classList.toggle('on', c > .5);
   prog.style.width = (p * 100).toFixed(2) + '%';
 }
@@ -233,12 +290,15 @@ function loop() {
 // для проверки кадров: прыжок к прогрессу p, промис ждёт готовый кадр видео
 window.__jump = p => new Promise(res => {
   const m = document.documentElement.scrollHeight - innerHeight; scrollTo(0, p * m); tgt = cur = p; render(p);
-  const done = () => (seeking ? vid.addEventListener('seeked', () => requestAnimationFrame(done), { once: true }) : requestAnimationFrame(() => res(true)));
+  const done = () => (s1.busy || s2.busy ? setTimeout(done, 30) : requestAnimationFrame(() => requestAnimationFrame(() => res(true))));
   done();
 });
 cta.addEventListener('click', () => alert('Это проба: запись на просмотр появится на настоящем сайте.'));
 
-Promise.all([document.fonts.ready, MOBILE ? loadFrames() : loadVideo()]).then(() => { readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true; });
+Promise.all([document.fonts.ready, MOBILE ? loadFrames() : loadVideo()]).then(() => {
+  readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true;
+  MOBILE ? loadFrames2() : loadVideo2();
+});
 resize();
 </script>
 </body>

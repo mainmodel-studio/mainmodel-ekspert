@@ -52,19 +52,20 @@ const HD = [
   [1.9, ['ПЛОЩАДЬ:', '64 М² С БАЛКОНОМ.']],
   [4.0, ['ПЯТЬ ЗОН —', 'ВСЕ ГОТОВЫ.']],
   [6.0, ['ГОСТИНАЯ', 'ШИРИНОЙ 8,4 М.']],
-  [7.6, ['ЗАЕЗЖАЙТЕ', 'В ДЕНЬ СДЕЛКИ.']],
+  [7.6, ['ДАЛЬШЕ —', 'КУХНЯ →']],
 ];
+const OUT1 = 8.55; // атом гостиной целиком уходит к T_END — дальше поворот на кухню
 // размер шрифта ленты: на компьютере 54, на телефоне — самая длинная строка влезает в видимую ширину
 function headFS(vis) {
   if (!MOB) return 54;
-  g.font = HEAVY(100); const widest = Math.max(...HD.flatMap(([, ls]) => ls.map(l => g.measureText(l).width)));
+  g.font = HEAVY(100); const widest = Math.max(...HD.concat(HD2).flatMap(([, ls]) => ls.map(l => g.measureText(l).width)));
   return Math.min(46, Math.floor(100 * (vis.x1 - vis.x0 - 48 - 40) / widest));
 }
-function heading(t, vis) {
+function heading(t, vis, hd = HD, out = OUT1, x0 = Z.head.x0, y0 = Z.head.y0) {
   const FS = headFS(vis), LH = Math.round(FS * 1.3), BASE = FS; // компьютер: 54 / 70 / база 54, как было
-  const HX = MOB ? vis.x0 + 24 : Math.max(vis.x0 + 70, W * Z.head.x0), HY = H * Z.head.y0 + Math.max(0, vis.y0);
-  HD.forEach(([s, lines], k) => {
-    const next = HD[k + 1] ? HD[k + 1][0] : 1e9;
+  const HX = MOB ? vis.x0 + 24 : Math.max(vis.x0 + 70, W * x0), HY = H * y0 + Math.max(0, vis.y0);
+  hd.forEach(([s, lines], k) => {
+    const next = hd[k + 1] ? hd[k + 1][0] : out;
     lines.forEach((ln, j) => {
       const a = eo((t - s - j * .08) / .45), e = eo((t - next + .42 - j * .05) / .3);
       if (a <= 0 || e >= 1) return;
@@ -80,16 +81,15 @@ function heading(t, vis) {
 }
 
 // ── метки рамки по видимой части кадра ──
-function marks(t, vis) {
-  const a = P(t, 0, .5); if (a <= 0) return;
+function marks(t, vis, lbl = 'КВАРТИРА 9.04 · СХЕМА 01 / 02', out = OUT1 + .1, lowOut = 1e9) {
+  const a = P(t, 0, .5) * (1 - P(t, out, .35)); if (a <= 0) return;
   g.save(); g.globalAlpha *= a; g.strokeStyle = POR; g.lineWidth = 3; g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 6;
   const m = MOB ? 18 : 36, l = MOB ? 22 : 28;
-  const lowA = 1 - P(t, 7.6, .3); // нижние метки уступают место финальной полосе
+  const lowA = 1 - P(t, lowOut, .3); // нижние метки уступают место финальной полосе
   for (const [x, y, sx, sy] of [[vis.x0 + m, vis.y0 + m, 1, 1], [vis.x1 - m, vis.y0 + m, -1, 1], [vis.x0 + m, vis.y1 - m, 1, -1], [vis.x1 - m, vis.y1 - m, -1, -1]]) {
     g.globalAlpha = a * (sy < 0 ? lowA : 1); g.beginPath(); g.moveTo(x, y + sy * l); g.lineTo(x, y); g.lineTo(x + sx * l, y); g.stroke();
   }
   g.restore();
-  const lbl = 'КВАРТИРА 9.04 · СХЕМА 01 / 01';
   if (MOB) { // телефон: метка под заголовком, на потолке
     const FS = headFS(vis), LH = Math.round(FS * 1.3);
     g.font = MONO(14); const w = g.measureText(lbl).width + 22, x = vis.x0 + 24, y = H * Z.head.y0 + Math.max(0, vis.y0) + 2 * (LH + 6) + 10;
@@ -218,7 +218,124 @@ function finale(t, vis) {
   g.restore();
 }
 
+// атом гостиной: финала нет — последняя лента «ДАЛЬШЕ — КУХНЯ →», всё уходит к T_END
 export function drawAtom(ctx, t, vis) {
   g = ctx; t = clamp(t, 0, T_END);
-  marks(t, vis); heading(t, vis); counter(t, vis); gates(t, vis); dimLine(t, vis); finale(t, vis);
+  marks(t, vis); heading(t, vis); counter(t, vis); gates(t, vis); dimLine(t, vis);
+}
+
+// ═════════ часть 2: поворот на кухню ═════════
+// координаты кадра кухни (финал клипа kling2, доли исходника 1928×1072):
+// компьютер — x·W; телефон — вертикальная вырезка 640 px с x = 648 исходника
+const FX = fx => MOB ? fx * 1928 - 648 : fx * W, FY = fy => fy * H;
+// зоны по глазу Opus (f030): потолок x .30–.75 / y .02–.17; задняя стена x .33–.72 / y .20–.50 (светлая);
+// правая колонна x .86–1; якоря: шкаф-колонна (.28,.45), остров (.55,.60), окно (.82,.45)
+const HD2 = [
+  [0.0, ['ЭТО КУХНЯ —', 'ОКНО НА ЗАПАД.']],
+  [2.0, ['ОСТРОВ', 'ВМЕСТО СТОЛА.']],
+  [4.0, ['ШКАФЫ', 'ДО ПОТОЛКА.']],
+  [6.0, ['УЖИН —', 'НА ЗАКАТЕ.']],
+  [7.6, ['ЗАЕЗЖАЙТЕ', 'В ДЕНЬ СДЕЛКИ.']],
+];
+export const T2_END = 9;
+
+// плашка поворота (только компьютер): закрывает правый край кадра x > .775, где штора Kling
+// на 2,0–2,5 с перетекает в колонну; выезжает справа как часть моушна и уезжает обратно
+export function drawTurn(ctx, vt, vis) {
+  if (MOB) return;
+  const a = eo((vt - 1.5) / .32) * (1 - eo((vt - 2.75) / .32)); if (a <= 0) return;
+  g = ctx;
+  const x0 = W * .772, w = vis.x1 - x0, x = x0 + (1 - a) * (w + 40), y = vis.y0, h = vis.y1 - vis.y0;
+  plate(x, y, w + 40, h, 1, 'rgba(240,238,230,.94)');
+  g.fillStyle = OR; g.fillRect(x, y, 10, h);
+  const cx = x + 46;
+  txt('ПОВОРОТ НАПРАВО', cx, y + h * .30, MONO(17), GR);
+  txt('КУХНЯ', cx, y + h * .30 + 70, HEAVY(64), GR);
+  txt('11,8 М²', cx, y + h * .30 + 140, HEAVY(64), OR);
+  txt('ОКНО НА ЗАПАД · ОСТРОВ', cx, y + h * .30 + 184, MONO(15), GR);
+  txt('→', cx, y + h * .72, HEAVY(120), OR);
+}
+
+// барабан 00,0 → 11,8 м² (три окна, запятая перед последним)
+function drum2(t, vis) {
+  const k = eb((t - .9) / .5); if (k <= 0) return;
+  const out = 1 - P(t, 7.4, .3); if (out <= 0) return;
+  const CG = 16, pw = 3 * DW + 2 * DG + CG + 2 * PAD, ph = DH + 110;
+  const x = MOB ? vis.x0 + 24 : FX(.345), y = FY(MOB ? .265 : .215) + (1 - k) * 30, a = clamp(k) * out;
+  plate(x, y, pw, ph, a);
+  g.save(); g.globalAlpha *= a;
+  txt('КУХНЯ', x + PAD, y + 28, MONO(14), GR);
+  const v = 118 * eo((t - 1.2) / 1.6);
+  for (let i = 0; i < 3; i++) digitWin(x + PAD + i * (DW + DG) + (i === 2 ? CG : 0), y + 40, i, v);
+  txt(',', x + PAD + 2 * DW + DG + CG / 2 + 1, y + 40 + DH - 6, HEAVY(40), GR, 1, 'center');
+  txt('М²', x + PAD, y + DH + 78, HEAVY(28), OR);
+  txt('ОТДЕЛЬНАЯ, С ОКНОМ', x + PAD, y + DH + 100, MONO(12), GR, P(t, 2.9, .4));
+  const fl = clamp(1 - Math.abs(t - 2.95) / .22) * .5;
+  if (fl > 0) { g.globalAlpha = fl * a; g.fillStyle = OR; g.fillRect(x - 8, y - 8, pw + 16, ph + 16); }
+  g.restore();
+}
+
+// выноска: точка-якорь с пульсом → линия дорисовывается → плашка с подписью
+function callout(t, t0, ax, ay, pts, px, py, pw, title, sub, col = PLATE) {
+  const out = 1 - P(t, 7.4, .3); if (out <= 0 || t < t0) return;
+  const d = eo((t - t0) / .3);
+  g.save(); g.globalAlpha *= out;
+  // пульс
+  const r = ((t - t0) % 1.4) / 1.4;
+  g.strokeStyle = OR; g.lineWidth = 3; g.globalAlpha = out * (1 - r) * d;
+  g.beginPath(); g.arc(ax, ay, 9 + r * 26, 0, 7); g.stroke();
+  g.globalAlpha = out * d; g.fillStyle = OR; g.beginPath(); g.arc(ax, ay, 9, 0, 7); g.fill();
+  g.fillStyle = POR; g.beginPath(); g.arc(ax, ay, 3.5, 0, 7); g.fill();
+  // линия по ломаной, длина растёт
+  const L = eo((t - t0 - .15) / .45); const path = [[ax, ay], ...pts];
+  let tot = 0; for (let i = 1; i < path.length; i++) tot += Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]);
+  let left = tot * L; g.globalAlpha = out; g.strokeStyle = POR; g.lineWidth = 3; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = MOB ? 0 : 6;
+  g.beginPath(); g.moveTo(ax, ay);
+  for (let i = 1; i < path.length && left > 0; i++) {
+    const [x0, y0] = path[i - 1], [x1, y1] = path[i], s = Math.hypot(x1 - x0, y1 - y0), f = Math.min(1, left / s);
+    g.lineTo(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f); left -= s;
+  }
+  g.stroke(); g.restore();
+  // плашка вытирается слева направо
+  const pA = eo((t - t0 - .5) / .4) * out; if (pA <= 0) return;
+  const ph = sub ? (MOB ? 58 : 70) : (MOB ? 40 : 46);
+  plate(px, py, pw * pA, ph, out, col);
+  g.save(); g.beginPath(); g.rect(px, py, pw * pA, ph); g.clip();
+  g.fillStyle = OR; g.fillRect(px, py, MOB ? 6 : 8, ph);
+  const tc = col === PLATE ? GR : POR;
+  txt(title, px + (MOB ? 16 : 22), py + (MOB ? 27 : 33), HEAVY(MOB ? 22 : 27), tc);
+  if (sub) txt(sub, px + (MOB ? 16 : 22), py + (MOB ? 48 : 56), MONO(MOB ? 13 : 15), tc);
+  g.restore();
+}
+// телефон: предмет за краем вырезки — чип со стрелкой к краю
+function edgeChip(t, t0, side, y, title, vis) {
+  const out = 1 - P(t, 7.4, .3), a = eo((t - t0) / .4) * out; if (a <= 0) return;
+  g.font = HEAVY(20); const w = g.measureText(title).width + 64, h = 44;
+  const x = side < 0 ? vis.x0 + 16 - (1 - a) * 60 : vis.x1 - 16 - w + (1 - a) * 60;
+  plate(x, y, w, h, a, 'rgba(34,37,34,.84)');
+  txt(side < 0 ? '←' : '→', side < 0 ? x + 16 : x + w - 16, y + 31, HEAVY(26), OR, a, side < 0 ? 'left' : 'right');
+  txt(title, side < 0 ? x + 48 : x + w - 48, y + 30, HEAVY(20), POR, a, side < 0 ? 'left' : 'right');
+}
+
+function callouts2(t, vis) {
+  if (MOB) {
+    const ax = FX(.52), ay = FY(.575), px = Math.max(vis.x0 + 24 + 196, ax - 150), py = FY(.30);
+    callout(t, 2.2, ax, ay, [[ax, py + 58]], px, py, vis.x1 - 16 - px, 'ОСТРОВ 2,4 М', 'КАМЕНЬ · 3 МЕСТА');
+    edgeChip(t, 4.2, -1, FY(.835), 'ШКАФЫ ДО ПОТОЛКА', vis); // чипы — в зоне пола под островом: не режут выноску и вазу
+    edgeChip(t, 6.0, 1, FY(.895), 'ОКНО НА ЗАПАД', vis);
+    return;
+  }
+  // остров: якорь на столешнице, линия вверх к плашке на задней стене
+  callout(t, 2.2, FX(.52), FY(.575), [[FX(.52), FY(.455)]], FX(.505), FY(.39), 330, 'ОСТРОВ 2,4 М', 'КАМЕНЬ · 3 МЕСТА');
+  // шкаф-колонна: линия влево-вверх к плашке на верхних фасадах
+  callout(t, 4.2, FX(.28), FY(.45), [[FX(.255), FY(.40)], [FX(.235), FY(.40)]], FX(.105), FY(.33), 262, 'ДО ПОТОЛКА', 'ШКАФЫ · 2,9 М');
+  // окно: линия вверх-влево к плашке над окном (правая колонна у края экрана обрезала плашку)
+  callout(t, 6.0, FX(.82), FY(.45), [[FX(.82), FY(.30)], [FX(.79), FY(.27)]], FX(.79) - 250, FY(.27) - 70, 250, 'ЗАКАТ', 'ОКНО НА ЗАПАД');
+}
+
+export function drawAtom2(ctx, t, vis) {
+  g = ctx; t = clamp(t, 0, T2_END);
+  marks(t, vis, 'КВАРТИРА 9.04 · СХЕМА 02 / 02', 1e9, 7.6);
+  heading(t, vis, HD2, 1e9, .31, MOB ? Z.head.y0 : .022);
+  drum2(t, vis); callouts2(t, vis); finale(t, vis);
 }
