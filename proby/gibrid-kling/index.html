@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 10%22%3E%3Crect width=%2210%22 height=%2210%22 fill=%22%23E78636%22/%3E%3C/svg%3E">
+<title>ЖК ЛИНИЯ · квартира 9.04 — проба гибрида Kling</title>
+<style>
+  :root { --por:#F0EEE6; --gr:#222522; --gn:#416B53; --or:#E78636;
+    --heavy: 800 1em Futura,"Avenir Next","Arial Black",sans-serif;
+    --mono: "PT Mono",Menlo,Consolas,monospace; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #1a1c1a; color: var(--gr); }
+  body { font-family: var(--mono); -webkit-font-smoothing: antialiased; }
+  html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }
+  #scroller { height: 660vh; position: relative; }
+  #stage { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
+  #vid, #atom, #poster { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vid, #poster { object-fit: cover; }
+  #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(70% 70% at 50% 48%, #FFFEFA 0%, #FFF4DF 38%, #F8E1BD 75%, #EFCFA2 100%); }
+
+  #bar { position: absolute; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 4vw 34px; font-size: 13px; letter-spacing: .14em; z-index: 5;
+    background: linear-gradient(rgba(240,238,230,.9), rgba(240,238,230,.55) 70%, rgba(240,238,230,0)); }
+  #bar b { font: var(--heavy); font-size: 22px; letter-spacing: .04em; }
+  #bar b i { font-style: normal; color: var(--or); }
+  #progress { position: absolute; left: 0; top: 0; height: 3px; background: var(--or); width: 0; z-index: 6; }
+
+  /* моушн-заголовки: строки поднимаются из маски */
+  .hd { position: absolute; z-index: 4; pointer-events: none; left: 4vw; top: 14vh; }
+  .hd .cap { font-size: 13px; letter-spacing: .18em; margin-bottom: 18px; opacity: 0; display: flex; gap: 14px; align-items: center; }
+  .hd .cap::before { content: ""; width: 34px; height: 3px; background: var(--or); display: inline-block; }
+  .hd .ln { overflow: hidden; line-height: .98; padding-bottom: .06em; }
+  .hd .ln span { display: block; font: var(--heavy); font-size: clamp(40px, 5.6vw, 100px); letter-spacing: -.01em; transform: translateY(110%); will-change: transform; }
+  .hd .ln.acc span { color: var(--or); }
+  .scrim { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: 0;
+    background: radial-gradient(120% 90% at 0% 0%, rgba(240,238,230,.95) 0%, rgba(240,238,230,.86) 38%, rgba(240,238,230,0) 70%); }
+
+  /* счётчик «до окна» */
+  #dist { position: absolute; right: 4vw; bottom: 9vh; z-index: 4; text-align: right; font-size: 13px; letter-spacing: .16em; color: var(--por);
+    background: rgba(34,37,34,.62); padding: 14px 20px 12px; }
+  #dist .n { font: var(--heavy); font-size: clamp(40px, 5vw, 84px); letter-spacing: 0; font-variant-numeric: tabular-nums; display: block; line-height: 1; margin-top: 6px; }
+  #dist .n i { font-style: normal; opacity: .55; font-size: .5em; margin-left: .15em; }
+
+  #hint { position: absolute; left: 50%; bottom: 3.2vh; transform: translateX(-50%); font-size: 12px; letter-spacing: .2em; z-index: 4; color: var(--por);
+    text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+  #note { position: absolute; left: 4vw; bottom: 3vh; font-size: 11px; letter-spacing: .12em; z-index: 4; color: var(--por); opacity: .7;
+    text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+  #cta { position: absolute; left: 0; top: 0; z-index: 7; font: var(--heavy); letter-spacing: .03em;
+    background: var(--or); color: var(--por); border: 0; cursor: pointer; opacity: 0; pointer-events: none; transition: background .2s; white-space: nowrap; }
+  #cta:hover { background: var(--gn); }
+  #cta.on { pointer-events: auto; }
+  #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9; font-size: 12px; letter-spacing: .2em; color: var(--por);
+    background: rgba(34,37,34,.8); padding: 14px 22px; transition: opacity .3s; }
+</style>
+</head>
+<body>
+<div id="scroller">
+  <div id="stage">
+    <video id="vid" muted playsinline preload="auto"></video>
+    <img id="poster" src="poster.jpg" alt="">
+    <div id="flash"></div>
+    <div class="scrim" id="scrim"></div>
+    <canvas id="atom"></canvas>
+    <div id="progress"></div>
+    <div id="bar"><b>ЛИНИЯ<i>.</i></b><span>ЖИЛОЙ КВАРТАЛ У ПАРКА</span></div>
+
+    <div class="hd" id="h1" data-from="-0.12" data-to="0.20">
+      <div class="cap">ЖК ЛИНИЯ · КВАРТАЛ У ПАРКА</div>
+      <div class="ln"><span>ДОМ, ГДЕ</span></div>
+      <div class="ln acc"><span>СОЛНЦЕ</span></div>
+      <div class="ln"><span>ДО ВЕЧЕРА.</span></div>
+    </div>
+    <div class="hd" id="h2" data-from="0.215" data-to="0.40">
+      <div class="cap">9 ЭТАЖ · ОКНА НА ЗАПАД</div>
+      <div class="ln"><span>ЗАГЛЯНИТЕ</span></div>
+      <div class="ln acc"><span>В ОКНО.</span></div>
+    </div>
+
+    <div id="dist">ДО ОКНА<span class="n">240<i>М</i></span></div>
+    <div id="hint">ЛИСТАЙТЕ ↓</div>
+    <div id="note">ПРОБА · ЖК И ЦИФРЫ ВЫДУМАНЫ</div>
+    <button id="cta" type="button">ЗАПИСАТЬСЯ НА ПРОСМОТР →</button>
+    <div id="load">ЗАГРУЗКА 0%</div>
+  </div>
+</div>
+
+<script type="module">
+import { drawAtom, finaleRect, T_END, W, H } from './atom.js?v=4';
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const sm = p => { p = clamp(p); return p * p * (3 - 2 * p); };
+const eo = p => { p = clamp(p); return 1 - Math.pow(1 - p, 3); };
+const $ = s => document.querySelector(s);
+
+const vid = $('#vid'), poster = $('#poster'), flash = $('#flash'), cv = $('#atom'), ctx = cv.getContext('2d'),
+      distEl = $('#dist'), distN = $('#dist .n'), hint = $('#hint'), cta = $('#cta'), prog = $('#progress'),
+      bar = $('#bar'), note = $('#note'), scrim = $('#scrim'), load = $('#load');
+const heads = [...document.querySelectorAll('.hd')].map(el => ({
+  el, from: +el.dataset.from, to: +el.dataset.to, cap: el.querySelector('.cap'), spans: [...el.querySelectorAll('.ln span')] }));
+
+const V_END = .55;            // видео занимает прокрутку 0 … .55, дальше держит последний кадр
+const ATOM_A = .47, ATOM_B = .96; // атом стартует на влёте (стык 4,3–4,7 с закрыт вспышкой) и живёт до конца
+let dur = 5.04, k = 1, ox = 0, oy = 0, dpr = 1, vis = { x0: 0, y0: 0, x1: W, y1: H };
+
+// ── видео: грузим целиком в blob, чтобы скраб не ждал сеть ──
+async function loadVideo() {
+  try {
+    const r = await fetch('flight.mp4');
+    const total = +r.headers.get('content-length') || 0, rd = r.body.getReader(), parts = []; let got = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length;
+      if (total) load.textContent = 'ЗАГРУЗКА ' + Math.round(got / total * 100) + '%'; }
+    vid.src = URL.createObjectURL(new Blob(parts, { type: 'video/mp4' }));
+  } catch (e) { vid.src = 'flight.mp4'; }
+  await new Promise(res => vid.readyState >= 2 ? res() : vid.addEventListener('loadeddata', res, { once: true }));
+  dur = vid.duration || dur; load.style.opacity = 0; poster.remove(); // без затухания: постер (кадр фасада) не должен двоиться с текущим кадром
+}
+
+// ── скраб: одна перемотка за раз, последняя цель не теряется ──
+let want = 0, seeking = false;
+function seek(t) { want = t; if (!seeking && vid.readyState >= 1 && Math.abs(vid.currentTime - t) > .02) { seeking = true; vid.currentTime = t; } }
+vid.addEventListener('seeked', () => { seeking = false; if (Math.abs(vid.currentTime - want) > .02) seek(want); });
+
+function placeCta() {
+  const r = finaleRect(vis), bw = 420, bh = 76, x = r.x + r.w - bw - 32, y = r.y + (r.h - bh) / 2;
+  Object.assign(cta.style, { left: ox + x * k + 'px', top: oy + y * k + 'px', width: bw * k + 'px', height: bh * k + 'px', fontSize: Math.max(10, 20 * k) + 'px' });
+}
+function resize() {
+  dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+  k = Math.max(innerWidth / W, innerHeight / H); ox = (innerWidth - W * k) / 2; oy = (innerHeight - H * k) / 2;
+  vis = { x0: -ox / k, y0: -oy / k, x1: W + ox / k, y1: H + oy / k };
+  placeCta(); render(cur, true);
+}
+addEventListener('resize', resize);
+
+function render(p) {
+  seek(dur * clamp(p / V_END) - (p >= V_END ? .001 : 0));
+  // вспышка влёта: свет из окна закрывает стык 4,3–4,7 с (импост и картина)
+  const vt = 5.04 * clamp(p / V_END);
+  flash.style.opacity = (clamp((1 - Math.abs(vt - 4.54) / .38) * 1.6) ** .7 * .94).toFixed(3); // плато 4,40–4,68 с
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  const ta = T_END * clamp((p - ATOM_A) / (ATOM_B - ATOM_A));
+  if (p > ATOM_A) { ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy); drawAtom(ctx, ta, vis); }
+
+  const vis2 = h => sm((p - h.from) / .03) * (1 - sm((p - h.to + .06) / .03));
+  scrim.style.opacity = Math.max(...heads.map(vis2));
+  for (const h of heads) {
+    const span = h.to - h.from;
+    h.cap.style.opacity = vis2(h);
+    h.spans.forEach((s, j) => {
+      const a = eo((p - h.from - j * .012) / (span * .35));
+      const e = eo((p - h.to + .045 - j * .008) / .045);
+      s.style.transform = `translateY(${((1 - a) * 110 - e * 150).toFixed(2)}%)`;
+      s.style.opacity = (1 - sm(e * 2.6)).toFixed(3); // уходящая строка гаснет быстро — без следа на фасаде
+    });
+  }
+  const d = Math.round(240 * (1 - clamp(p / .46)));
+  distN.firstChild.nodeValue = String(d).padStart(3, '0');
+  distEl.style.opacity = 1 - sm((p - .40) / .05);
+  bar.style.opacity = 1 - sm((p - .44) / .04);           // внутри бренд несёт метка атома
+  note.style.opacity = .7 * (1 - sm((p - .44) / .04));
+  hint.style.opacity = 1 - sm(p / .03);
+  const c = sm((ta - 8.15) / .4);
+  cta.style.opacity = c; cta.classList.toggle('on', c > .5);
+  prog.style.width = (p * 100).toFixed(2) + '%';
+}
+
+let tgt = 0, cur = 0;
+const readScroll = () => { const m = document.documentElement.scrollHeight - innerHeight; tgt = m > 0 ? clamp(scrollY / m) : 0; };
+addEventListener('scroll', readScroll, { passive: true });
+function loop() {
+  const d = tgt - cur;
+  if (Math.abs(d) > 1e-5) { cur += d * .1; render(cur); }
+  requestAnimationFrame(loop);
+}
+// для проверки кадров: прыжок к прогрессу p, промис ждёт готовый кадр видео
+window.__jump = p => new Promise(res => {
+  const m = document.documentElement.scrollHeight - innerHeight; scrollTo(0, p * m); tgt = cur = p; render(p);
+  const done = () => (seeking ? vid.addEventListener('seeked', () => requestAnimationFrame(done), { once: true }) : requestAnimationFrame(() => res(true)));
+  done();
+});
+cta.addEventListener('click', () => alert('Это проба: запись на просмотр появится на настоящем сайте.'));
+
+Promise.all([document.fonts.ready, loadVideo()]).then(() => { readScroll(); cur = tgt; resize(); requestAnimationFrame(loop); window.__ready = true; });
+resize();
+</script>
+</body>
+</html>
